@@ -1,0 +1,77 @@
+{
+  "name": "loop.system-bootstrap",
+  "version": "v1",
+  "purpose": "Bootstrap a reusable Loop Engineering system for a new project or workspace without mixing it with business-domain work.",
+  "template": {
+    "summary": "Generated a Loop system bootstrap package.",
+    "artifacts": [
+      {
+        "type": "loop_bootstrap_tracks",
+        "value": [
+          "project_memory_spine",
+          "boot_payload",
+          "skill_registry",
+          "connector_registry",
+          "task_record_store",
+          "issue_register",
+          "intent_debt",
+          "regression_candidates",
+          "ci_required_checks",
+          "pr_review_gate",
+          "production_smoke_gate"
+        ]
+      },
+      {
+        "type": "required_loop_files",
+        "value": [
+          "LOOP_SYSTEM_STANDARD.md",
+          "loop_registry/skills.json",
+          "loop_registry/connectors.json",
+          "memory/project_context.md",
+          "memory/project_status.md",
+          "memory/project_standards.md",
+          "memory/issues/loop-system-issues.jsonl",
+          ".github/workflows/ci.yml",
+          ".github/branch-protection-main.json"
+        ]
+      },
+      {
+        "type": "loop_governance_gates",
+        "value": [
+          "preflight_gate",
+          "review_gate",
+          "verification_gate",
+          "merge_gate",
+          "remote_ci_gate",
+          "production_risk_gate"
+        ]
+      },
+      {
+        "type": "separation_rules",
+        "value": [
+          "loop_system_changes_go_to_loop_branches",
+          "business_project_changes_go_to_project_branches",
+          "marketing_or_design_skills_go_to_separate_skill_branches",
+          "do_not_mix_platform_governance_with_business_features",
+          "do_not_mix_skill_creation_with_app_feature_work"
+        ]
+      },
+      {
+        "type": "bootstrap_acceptance",
+        "value": [
+          "repository_memory_exists_and_is_loaded_before_planning",
+          "every_loop_issue_is_recorded_in_issue_register",
+          "ci_runs_loop_tests_and_project_tests",
+          "main_branch_requires_pr_review_and_required_checks",
+          "production_smoke_test_workflow_exists_or_is_blocked_with_intent_debt"
+        ]
+      },
+      {
+        "type": "goal_snapshot",
+        "from_payload_key": "goal",
+        "default": ""
+      }
+    ],
+    "next_recommendation": "Create the Loop system scaffold first, verify governance gates, then open separate project or domain-skill branches."
+  }
+}
