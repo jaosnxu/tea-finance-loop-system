@@ -27,7 +27,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertEqual(snapshot["recent_actions"], [])
 
     def test_runtime_loads_repository_memory_and_records_actions(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-REPOSITORY-MEMORY",
@@ -78,7 +78,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue(RepositoryMemory(Path(repo_dir) / "memory").search_actions(task_id=payload.task_id))
 
     def test_runtime_records_intent_debt_in_repository_memory(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-REPOSITORY-INTENT-DEBT",
@@ -127,7 +127,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertIsNotNone(status["intent_debt"])
 
     def test_cli_prints_repository_memory_report(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as root_dir:
             boot_path = Path(root_dir) / "boot.json"
             boot_path.write_text(

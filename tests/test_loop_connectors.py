@@ -8,7 +8,7 @@ from loop_engineering.connector_runner import execute_connector
 from loop_engineering.models import ConnectorMeta
 
 
-REPO_ROOT = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _connector_meta(name: str, target: str, entry: str) -> ConnectorMeta:

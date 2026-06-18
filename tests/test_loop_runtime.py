@@ -25,7 +25,7 @@ class LoopRuntimeTests(unittest.TestCase):
             )
 
     def test_boot_and_run_creates_external_state(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-0001",
@@ -85,7 +85,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(run_report["issue_count"], len(task_record["issue_backlog"]))
 
     def test_network_failure_retries_and_completes_when_cleared(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-0002",
@@ -125,7 +125,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertTrue(runtime.context.memory.experience_memory.get("failures"))
 
     def test_permission_failure_becomes_intent_debt(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-0003",
@@ -159,7 +159,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertIsNotNone(runtime.context.task_record.intent_debt)
 
     def test_runtime_executes_git_cli_test_and_mcp_connectors(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
             subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
             payload = BootPayload(
@@ -212,7 +212,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.gate_status["merge_gate"]["status"], "passed")
 
     def test_runtime_can_resume_existing_durable_state(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-RESUME",
@@ -258,7 +258,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(resumed.context.task_record.status, "completed")
 
     def test_preflight_blocks_missing_connector_auth(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-PREFLIGHT",
@@ -294,7 +294,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.gate_status["preflight_gate"]["status"], "blocked")
 
     def test_preflight_accepts_auth_from_environment_variable(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         previous = os.environ.get("LOOP_TEST_GITHUB_TOKEN")
         os.environ["LOOP_TEST_GITHUB_TOKEN"] = "token-for-test"
         try:
@@ -338,7 +338,7 @@ class LoopRuntimeTests(unittest.TestCase):
                 os.environ["LOOP_TEST_GITHUB_TOKEN"] = previous
 
     def test_watchdog_reports_healthy_heartbeat(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-WATCHDOG",
@@ -368,7 +368,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(status["status"], "healthy")
 
     def test_merge_gate_accepts_available_github_remote_status(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-GITHUB-MERGE",
@@ -407,7 +407,7 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertIn("github_remote_status", artifact_types)
 
     def test_merge_gate_blocks_failed_remote_status_checks(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-GITHUB-MERGE-BLOCKED",
@@ -449,7 +449,7 @@ class LoopRuntimeTests(unittest.TestCase):
             )
 
     def test_runtime_routes_figma_and_product_design_connectors(self) -> None:
-        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
             payload = BootPayload(
                 task_id="TASK-TEST-DESIGN-INTEGRATIONS",
