@@ -83,6 +83,20 @@
       "trigger_summary": "Use when a page or dashboard must be implemented from a structured spec.",
       "priority": 30,
       "standard_name": "implementation_skill"
+    },
+    {
+      "name": "marketing.brand-social-campaign",
+      "version": "v1",
+      "status": "stable",
+      "domain": "marketing",
+      "tags": ["brand", "social", "campaign", "marketing", "content", "creative", "canva", "figma"],
+      "owner": "system",
+      "entry": "loop_registry/skills/marketing.brand-social-campaign.v1.json",
+      "input_schema": "schemas/marketing.brand-social-campaign.input.json",
+      "output_schema": "schemas/marketing.brand-social-campaign.output.json",
+      "trigger_summary": "Use when a brand, product, restaurant, retail, or campaign brief needs social media strategy, content pillars, channel plan, creative briefs, post copy, or marketing assets.",
+      "priority": 12,
+      "standard_name": "marketing_skill"
     }
   ]
 }
