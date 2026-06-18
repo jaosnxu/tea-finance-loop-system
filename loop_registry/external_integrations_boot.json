@@ -25,9 +25,18 @@
       "test"
     ],
     "provided_auth": [
-      "figma_session"
+      "figma_session",
+      "token"
     ],
-    "repo": "missing-owner/missing-repo",
+    "repo": "jaosnxu/tea-finance-loop-system",
+    "github_command": [
+      "/Users/jason/Documents/Codex/tools/bin/gh",
+      "repo",
+      "view",
+      "jaosnxu/tea-finance-loop-system",
+      "--json",
+      "nameWithOwner,isPrivate,defaultBranchRef,url"
+    ],
     "figma_file_key": "DVWsGG329BggsIlWbUXBYS",
     "product_design_brief": "Tea chain Russia internal management backend: Product Design should guide UX structure, Figma should hold editable screens, GitHub should hold PR and checks workflow.",
     "test_command": [

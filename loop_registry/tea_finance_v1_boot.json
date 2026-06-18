@@ -31,10 +31,18 @@
       "test",
       "mcp"
     ],
-    "provided_auth": ["figma_session"],
+    "provided_auth": ["figma_session", "token"],
     "figma_file_key": "DVWsGG329BggsIlWbUXBYS",
     "browser_target": "http://localhost:3000",
-    "repo": "tea-finance-system",
+    "repo": "jaosnxu/tea-finance-loop-system",
+    "github_command": [
+      "/Users/jason/Documents/Codex/tools/bin/gh",
+      "repo",
+      "view",
+      "jaosnxu/tea-finance-loop-system",
+      "--json",
+      "nameWithOwner,isPrivate,defaultBranchRef,url"
+    ],
     "git_command": ["/bin/echo", "tea finance git connector placeholder"],
     "cli_command": ["npm", "run", "test:db"],
     "test_command": ["npm", "run", "build"],
