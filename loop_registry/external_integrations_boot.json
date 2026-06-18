@@ -17,6 +17,8 @@
   ],
   "environment": {
     "source_path": "/Users/jason/Documents/Codex/2026-06-13-new-chat",
+    "repository_root": "/Users/jason/Documents/Codex/2026-06-13-new-chat",
+    "repository_memory_path": "memory",
     "worktree_root": "/private/tmp/loop-worktrees",
     "available_connectors": [
       "github",

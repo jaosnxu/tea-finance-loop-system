@@ -26,11 +26,12 @@ STATE_ORDER = [
 
 
 class LoopRuntime:
-    def __init__(self, context: RuntimeContext, task_store, subagent_manager, memory_store=None) -> None:
+    def __init__(self, context: RuntimeContext, task_store, subagent_manager, memory_store=None, repository_memory_store=None) -> None:
         self.context = context
         self.task_store = task_store
         self.subagent_manager = subagent_manager
         self.memory_store = memory_store
+        self.repository_memory_store = repository_memory_store
 
     def step(self) -> RuntimeStepResult:
         stage = self.context.task_record.current_stage
@@ -47,12 +48,29 @@ class LoopRuntime:
                 next_state="understanding",
             )
         elif stage == "understanding":
+            repository_memory = self.context.repository_memory
             result = RuntimeStepResult(
                 state=stage,
-                summary="Parsed task scope, acceptance, and available system resources.",
+                summary="Parsed task scope, acceptance, available resources, and repository memory.",
                 actions=[
                     {"type": "read_scope", "scope": self.context.task_record.scope},
                     {"type": "read_acceptance", "acceptance": self.context.task_record.acceptance},
+                    {
+                        "type": "read_repository_memory",
+                        "root": repository_memory.get("root"),
+                        "loaded_files": sorted(repository_memory.get("files", {}).keys()),
+                        "recent_action_count": len(repository_memory.get("recent_actions", [])),
+                    },
+                ],
+                artifacts=[
+                    {
+                        "type": "repository_memory_context",
+                        "root": repository_memory.get("root"),
+                        "loaded_files": sorted(repository_memory.get("files", {}).keys()),
+                        "recent_action_count": len(repository_memory.get("recent_actions", [])),
+                        "recent_success_count": len(repository_memory.get("recent_successes", [])),
+                        "recent_failure_count": len(repository_memory.get("recent_failures", [])),
+                    }
                 ],
                 next_state="planning",
             )
@@ -161,6 +179,7 @@ class LoopRuntime:
             "timestamp": record.updated_at,
         }
         self.task_store.append_report(report)
+        self._append_repository_action(result)
         self._trace("report_appended", report)
         self.task_store.write_run_report(record)
         self.context.memory.task_memory.update(
@@ -191,6 +210,14 @@ class LoopRuntime:
                     outcome=result.summary,
                     recommendation="Review repair path and update routing or policy.",
                 )
+            if self.repository_memory_store:
+                self.repository_memory_store.append_experience(
+                    kind="failure",
+                    task_id=record.task_id,
+                    pattern=result.failure_type,
+                    summary=result.summary,
+                    recommendation="Review repair path and update routing or policy.",
+                )
         if result.next_state == "completed":
             record.status = "completed"
             record.current_stage = "completed"
@@ -200,6 +227,14 @@ class LoopRuntime:
                     pattern="task_completed",
                     context={"goal": record.goal},
                     outcome=result.summary,
+                    recommendation="Reuse selected skills/connectors for similar goals.",
+                )
+            if self.repository_memory_store:
+                self.repository_memory_store.append_experience(
+                    kind="success",
+                    task_id=record.task_id,
+                    pattern="task_completed",
+                    summary=result.summary,
                     recommendation="Reuse selected skills/connectors for similar goals.",
                 )
         elif result.next_state == "blocked":
@@ -493,6 +528,21 @@ class LoopRuntime:
                 "timestamp": utc_now(),
                 "payload": payload,
             }
+        )
+
+    def _append_repository_action(self, result: RuntimeStepResult) -> None:
+        if not self.repository_memory_store:
+            return
+        self.repository_memory_store.append_action(
+            task_id=self.context.task_record.task_id,
+            goal=self.context.task_record.goal,
+            stage=result.state,
+            status=result.status,
+            summary=result.summary,
+            next_state=result.next_state,
+            failure_type=result.failure_type,
+            actions=result.actions,
+            artifacts=result.artifacts,
         )
 
     def _lookup_experience(self, pattern: str) -> dict:

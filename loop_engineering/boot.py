@@ -3,6 +3,7 @@ from __future__ import annotations
 from .memory_store import MemoryStore
 from .models import BootPayload, RuntimeContext, TaskRecord
 from .registry import ConnectorRegistry, SkillRegistry
+from .repository_memory import RepositoryMemory
 from .runtime import LoopRuntime
 from .subagent_runner import SubAgentManager, SubAgentStore
 from .task_store import TaskStore
@@ -45,6 +46,10 @@ def boot_runtime(
 
     skill_registry = SkillRegistry(skill_registry_path)
     connector_registry = ConnectorRegistry(connector_registry_path)
+    repository_memory_store = _build_repository_memory(payload.environment)
+    repository_memory_snapshot = (
+        repository_memory_store.read_required_context() if repository_memory_store else {}
+    )
 
     worktree_manager = WorktreeManager(payload.environment["worktree_root"], payload.task_id)
     if resume_existing and task_store.exists():
@@ -92,6 +97,14 @@ def boot_runtime(
             "workflow_manifest": workflow_manifest(),
         }
     )
+    if repository_memory_snapshot:
+        memory.project_memory["repository_memory"] = {
+            "root": repository_memory_snapshot["root"],
+            "loaded_files": sorted(repository_memory_snapshot["files"].keys()),
+            "recent_action_count": len(repository_memory_snapshot["recent_actions"]),
+            "recent_success_count": len(repository_memory_snapshot["recent_successes"]),
+            "recent_failure_count": len(repository_memory_snapshot["recent_failures"]),
+        }
     memory_store.save(memory)
 
     subagents = subagent_store.load_many(task_record.active_subagents) if resume_existing else []
@@ -105,6 +118,18 @@ def boot_runtime(
         subagents=subagents,
         environment=payload.environment,
         policy=payload.policy,
+        repository_memory=repository_memory_snapshot,
     )
-    runtime = LoopRuntime(context, task_store, subagent_manager, memory_store)
+    runtime = LoopRuntime(context, task_store, subagent_manager, memory_store, repository_memory_store)
     return runtime, task_store, memory_store
+
+
+def _build_repository_memory(environment: dict) -> RepositoryMemory | None:
+    repository_memory_path = environment.get("repository_memory_path")
+    if not repository_memory_path:
+        return None
+    path = repository_memory_path
+    if not str(path).startswith("/"):
+        repository_root = environment.get("repository_root") or environment.get("source_path") or "."
+        path = f"{repository_root}/{repository_memory_path}"
+    return RepositoryMemory(path)

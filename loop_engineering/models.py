@@ -132,6 +132,7 @@ class RuntimeContext:
     subagents: list[SubAgentRecord]
     environment: dict[str, Any]
     policy: dict[str, Any]
+    repository_memory: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
