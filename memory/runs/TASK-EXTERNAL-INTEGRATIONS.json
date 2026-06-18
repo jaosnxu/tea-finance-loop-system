@@ -1,0 +1,111 @@
+{
+  "updated_at": "2026-06-18T18:44:22.082616+00:00",
+  "active_task_id": "TASK-EXTERNAL-INTEGRATIONS",
+  "active_goal": "Connect Loop Engineering to GitHub repository workflow, Figma canvas workflow, and Product Design workflow.",
+  "status": "completed",
+  "current_stage": "completed",
+  "last_summary": "Review and verification gates passed.",
+  "gate_status": {
+    "preflight_gate": {
+      "status": "passed",
+      "reason": "preflight checks passed",
+      "contracts": [
+        {
+          "name": "github",
+          "standard_name": "remote_pr_adapter",
+          "target": "github",
+          "mode": "read_write",
+          "risk_level": "high",
+          "auth_requirements": [
+            "token"
+          ],
+          "capabilities": [
+            "read_repo",
+            "read_pr",
+            "create_pr"
+          ]
+        },
+        {
+          "name": "figma",
+          "standard_name": "figma_canvas_adapter",
+          "target": "figma",
+          "mode": "read_write",
+          "risk_level": "medium",
+          "auth_requirements": [
+            "figma_session"
+          ],
+          "capabilities": [
+            "read_design",
+            "screenshot",
+            "sync_canvas",
+            "write_design"
+          ]
+        },
+        {
+          "name": "product_design",
+          "standard_name": "product_design_workflow_adapter",
+          "target": "product_design",
+          "mode": "workflow",
+          "risk_level": "medium",
+          "auth_requirements": [],
+          "capabilities": [
+            "context",
+            "ux_audit",
+            "ideation",
+            "prototype",
+            "design_qa"
+          ]
+        },
+        {
+          "name": "test",
+          "standard_name": "ci_test_runner",
+          "target": "test",
+          "mode": "read_only",
+          "risk_level": "low",
+          "auth_requirements": [],
+          "capabilities": [
+            "unit",
+            "integration",
+            "verification"
+          ]
+        }
+      ],
+      "auth_resolution": {
+        "github": [
+          {
+            "requirement": "token",
+            "source": "provided_auth",
+            "env": null,
+            "available": true
+          }
+        ],
+        "figma": [
+          {
+            "requirement": "figma_session",
+            "source": "provided_auth",
+            "env": null,
+            "available": true
+          }
+        ],
+        "product_design": [],
+        "test": []
+      },
+      "missing_auth": []
+    },
+    "review_gate": {
+      "status": "approved",
+      "reason": "review checks passed"
+    },
+    "verification_gate": {
+      "status": "verified",
+      "reason": "verification checks passed"
+    },
+    "merge_gate": {
+      "status": "passed",
+      "reason": "merge gate passed"
+    }
+  },
+  "issue_count": 4,
+  "failure_count": 0,
+  "intent_debt": null
+}

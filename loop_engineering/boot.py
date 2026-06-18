@@ -102,8 +102,10 @@ def boot_runtime(
             "root": repository_memory_snapshot["root"],
             "loaded_files": sorted(repository_memory_snapshot["files"].keys()),
             "recent_action_count": len(repository_memory_snapshot["recent_actions"]),
+            "recent_intent_debt_count": len(repository_memory_snapshot["recent_intent_debt"]),
             "recent_success_count": len(repository_memory_snapshot["recent_successes"]),
             "recent_failure_count": len(repository_memory_snapshot["recent_failures"]),
+            "current_status": repository_memory_snapshot["current_status"],
         }
     memory_store.save(memory)
 

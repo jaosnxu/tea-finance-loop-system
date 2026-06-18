@@ -112,22 +112,41 @@ class RepositoryMemory:
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root)
         self.action_log_path = self.root / "action_log.jsonl"
+        self.intent_debt_path = self.root / "intent_debt.jsonl"
+        self.current_status_path = self.root / "current_status.json"
         self.success_log_path = self.root / "experience" / "successes.jsonl"
         self.failure_log_path = self.root / "experience" / "failures.jsonl"
 
     def initialize(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         (self.root / "projects").mkdir(parents=True, exist_ok=True)
+        (self.root / "runs").mkdir(parents=True, exist_ok=True)
         (self.root / "experience").mkdir(parents=True, exist_ok=True)
         for relative_path, default_content in REQUIRED_MEMORY_FILES.items():
             path = self.root / relative_path
             if not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(default_content, encoding="utf-8")
-        for path in [self.action_log_path, self.success_log_path, self.failure_log_path]:
+        for path in [self.action_log_path, self.intent_debt_path, self.success_log_path, self.failure_log_path]:
             if not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("", encoding="utf-8")
+        if not self.current_status_path.exists():
+            self.current_status_path.write_text(
+                json.dumps(
+                    {
+                        "updated_at": utc_now(),
+                        "active_task_id": None,
+                        "active_goal": None,
+                        "status": "initialized",
+                        "current_stage": None,
+                        "last_summary": "Repository memory initialized.",
+                    },
+                    indent=2,
+                    ensure_ascii=True,
+                ),
+                encoding="utf-8",
+            )
 
     def read_required_context(self, *, recent_actions: int = 20) -> dict[str, Any]:
         self.initialize()
@@ -139,9 +158,29 @@ class RepositoryMemory:
             "root": str(self.root),
             "files": files,
             "recent_actions": self._read_jsonl_tail(self.action_log_path, recent_actions),
+            "recent_intent_debt": self._read_jsonl_tail(self.intent_debt_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
             "recent_failures": self._read_jsonl_tail(self.failure_log_path, recent_actions),
+            "current_status": json.loads(self.current_status_path.read_text(encoding="utf-8")),
         }
+
+    def search_actions(
+        self,
+        *,
+        task_id: str | None = None,
+        stage: str | None = None,
+        status: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        rows = self._read_jsonl_tail(self.action_log_path, 10000)
+        if task_id:
+            rows = [row for row in rows if row.get("task_id") == task_id]
+        if stage:
+            rows = [row for row in rows if row.get("stage") == stage]
+        if status:
+            rows = [row for row in rows if row.get("status") == status]
+        return rows[-limit:]
 
     def append_action(
         self,
@@ -170,6 +209,47 @@ class RepositoryMemory:
             "artifact_types": [artifact.get("type") for artifact in artifacts],
         }
         self._append_jsonl(self.action_log_path, row)
+
+    def write_run_status(
+        self,
+        *,
+        task_id: str,
+        goal: str,
+        status: str,
+        current_stage: str,
+        last_summary: str,
+        gate_status: dict[str, Any],
+        issue_count: int,
+        failure_count: int,
+        intent_debt: dict[str, Any] | None,
+    ) -> None:
+        self.initialize()
+        row = {
+            "updated_at": utc_now(),
+            "active_task_id": task_id,
+            "active_goal": goal,
+            "status": status,
+            "current_stage": current_stage,
+            "last_summary": last_summary,
+            "gate_status": gate_status,
+            "issue_count": issue_count,
+            "failure_count": failure_count,
+            "intent_debt": intent_debt,
+        }
+        self.current_status_path.write_text(json.dumps(row, indent=2, ensure_ascii=True), encoding="utf-8")
+        run_path = self.root / "runs" / f"{task_id}.json"
+        run_path.write_text(json.dumps(row, indent=2, ensure_ascii=True), encoding="utf-8")
+
+    def append_intent_debt(self, *, task_id: str, debt: dict[str, Any]) -> None:
+        self.initialize()
+        self._append_jsonl(
+            self.intent_debt_path,
+            {
+                "timestamp": utc_now(),
+                "task_id": task_id,
+                "debt": debt,
+            },
+        )
 
     def append_experience(
         self,

@@ -60,6 +60,8 @@ class LoopRuntime:
                         "root": repository_memory.get("root"),
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
+                        "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "current_status": repository_memory.get("current_status", {}),
                     },
                 ],
                 artifacts=[
@@ -68,8 +70,10 @@ class LoopRuntime:
                         "root": repository_memory.get("root"),
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
+                        "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
                         "recent_failure_count": len(repository_memory.get("recent_failures", [])),
+                        "current_status": repository_memory.get("current_status", {}),
                     }
                 ],
                 next_state="planning",
@@ -240,12 +244,18 @@ class LoopRuntime:
         elif result.next_state == "blocked":
             record.status = "blocked"
             record.current_stage = "blocked"
+            if self.repository_memory_store and record.intent_debt:
+                self.repository_memory_store.append_intent_debt(
+                    task_id=record.task_id,
+                    debt=record.intent_debt,
+                )
         elif result.next_state == "aborted":
             record.status = "aborted"
             record.current_stage = "aborted"
         elif result.next_state:
             record.status = "running"
             record.current_stage = result.next_state
+        self._write_repository_status(result)
 
     def _preflight(self) -> RuntimeStepResult:
         selected_connector_names = self.context.memory.task_memory.get("selected_connectors", [])
@@ -543,6 +553,22 @@ class LoopRuntime:
             failure_type=result.failure_type,
             actions=result.actions,
             artifacts=result.artifacts,
+        )
+
+    def _write_repository_status(self, result: RuntimeStepResult) -> None:
+        if not self.repository_memory_store:
+            return
+        record = self.context.task_record
+        self.repository_memory_store.write_run_status(
+            task_id=record.task_id,
+            goal=record.goal,
+            status=record.status,
+            current_stage=record.current_stage,
+            last_summary=result.summary,
+            gate_status=record.gate_status,
+            issue_count=len(record.issue_backlog),
+            failure_count=len(record.failure_history),
+            intent_debt=record.intent_debt,
         )
 
     def _lookup_experience(self, pattern: str) -> dict:
