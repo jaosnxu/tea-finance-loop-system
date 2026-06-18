@@ -129,6 +129,10 @@ Failures should become regression candidates and tests.
 
 Production writes require explicit human approval.
 """,
+    "issues/README.md": """# Loop System Issue Register
+
+Every Loop-system issue must be recorded here, including time, situation, symptom, cause, impact, status, resolution, and regression coverage.
+""",
 }
 
 
@@ -137,6 +141,7 @@ class RepositoryMemory:
         self.root = Path(root)
         self.action_log_path = self.root / "action_log.jsonl"
         self.intent_debt_path = self.root / "intent_debt.jsonl"
+        self.issue_register_path = self.root / "issues" / "loop-system-issues.jsonl"
         self.regression_candidate_path = self.root / "regression_candidates.jsonl"
         self.current_status_path = self.root / "current_status.json"
         self.success_log_path = self.root / "experience" / "successes.jsonl"
@@ -146,6 +151,7 @@ class RepositoryMemory:
         self.root.mkdir(parents=True, exist_ok=True)
         (self.root / "projects").mkdir(parents=True, exist_ok=True)
         (self.root / "backlog").mkdir(parents=True, exist_ok=True)
+        (self.root / "issues").mkdir(parents=True, exist_ok=True)
         (self.root / "verification").mkdir(parents=True, exist_ok=True)
         (self.root / "runs").mkdir(parents=True, exist_ok=True)
         (self.root / "experience").mkdir(parents=True, exist_ok=True)
@@ -157,6 +163,7 @@ class RepositoryMemory:
         for path in [
             self.action_log_path,
             self.intent_debt_path,
+            self.issue_register_path,
             self.regression_candidate_path,
             self.success_log_path,
             self.failure_log_path,
@@ -191,6 +198,7 @@ class RepositoryMemory:
             "root": str(self.root),
             "files": files,
             "recent_actions": self._read_jsonl_tail(self.action_log_path, recent_actions),
+            "recent_issues": self._read_jsonl_tail(self.issue_register_path, recent_actions),
             "recent_intent_debt": self._read_jsonl_tail(self.intent_debt_path, recent_actions),
             "recent_regression_candidates": self._read_jsonl_tail(self.regression_candidate_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
@@ -215,6 +223,64 @@ class RepositoryMemory:
         if status:
             rows = [row for row in rows if row.get("status") == status]
         return rows[-limit:]
+
+    def search_issues(
+        self,
+        *,
+        status: str | None = None,
+        severity: str | None = None,
+        project: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        rows = self._read_jsonl_tail(self.issue_register_path, 10000)
+        if status:
+            rows = [row for row in rows if row.get("status") == status]
+        if severity:
+            rows = [row for row in rows if row.get("severity") == severity]
+        if project:
+            rows = [row for row in rows if row.get("project") == project]
+        return rows[-limit:]
+
+    def append_issue(
+        self,
+        *,
+        issue_id: str,
+        project: str,
+        severity: str,
+        status: str,
+        situation: str,
+        symptom: str,
+        cause: str,
+        impact: str,
+        action_taken: str,
+        next_step: str,
+        related_task_id: str | None = None,
+        related_pr: str | None = None,
+        related_check: str | None = None,
+        regression_test: str | None = None,
+    ) -> None:
+        self.initialize()
+        self._append_jsonl(
+            self.issue_register_path,
+            {
+                "timestamp": utc_now(),
+                "issue_id": issue_id,
+                "project": project,
+                "severity": severity,
+                "status": status,
+                "situation": situation,
+                "symptom": symptom,
+                "cause": cause,
+                "impact": impact,
+                "action_taken": action_taken,
+                "next_step": next_step,
+                "related_task_id": related_task_id,
+                "related_pr": related_pr,
+                "related_check": related_check,
+                "regression_test": regression_test,
+            },
+        )
 
     def append_action(
         self,

@@ -7,6 +7,7 @@ Rules:
 - Record every Loop stage result in `action_log.jsonl`.
 - Keep the latest task status in `current_status.json`.
 - Persist blocked intent debt in `intent_debt.jsonl`.
+- Persist Loop-system defects and blockers in `issues/loop-system-issues.jsonl`.
 - Persist regression candidates in `regression_candidates.jsonl`.
 - Store per-task run snapshots in `runs/`.
 - Keep project backlog in `backlog/`.
