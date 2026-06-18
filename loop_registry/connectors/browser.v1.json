@@ -1,0 +1,19 @@
+{
+  "name": "browser",
+  "version": "v1",
+  "purpose": "Prepare browser execution context and target metadata.",
+  "template": {
+    "summary": "Prepared browser connector context.",
+    "artifacts": [
+      {
+        "type": "browser_target",
+        "resolver": "browser_target"
+      },
+      {
+        "type": "browser_mode",
+        "resolver": "browser_mode"
+      }
+    ],
+    "next_recommendation": "Open target in browser execution environment when UI verification is needed."
+  }
+}

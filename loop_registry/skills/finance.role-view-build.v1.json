@@ -1,0 +1,44 @@
+{
+  "name": "finance.role-view-build",
+  "template": {
+    "summary": "Captured the V1 role-view requirements for boss, finance, cashier, and applicant users.",
+    "artifacts": [
+      {
+        "type": "role_views",
+        "value": [
+          "boss_group_cashflow",
+          "finance_payment_reconciliation",
+          "cashier_ocr_and_payment_check",
+          "applicant_own_requests"
+        ]
+      },
+      {
+        "type": "role_scope",
+        "value": {
+          "boss": [
+            "group_cashflow",
+            "organization_cashflow",
+            "income_expense",
+            "reports"
+          ],
+          "finance": [
+            "payment_requests",
+            "executions",
+            "ledger",
+            "reports"
+          ],
+          "cashier": [
+            "ocr_exceptions",
+            "payment_matching",
+            "receivable_checks"
+          ],
+          "applicant": [
+            "own_requests",
+            "reimbursement_progress"
+          ]
+        }
+      }
+    ],
+    "next_recommendation": "Reflect role scope in dashboard cards, lists, and settings defaults."
+  }
+}

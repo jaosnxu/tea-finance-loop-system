@@ -1,0 +1,19 @@
+{
+  "name": "filesystem",
+  "version": "v1",
+  "purpose": "Inspect local filesystem targets and expose basic existence and listing artifacts.",
+  "template": {
+    "summary": "Inspected filesystem target.",
+    "artifacts": [
+      {
+        "type": "filesystem_exists",
+        "resolver": "filesystem_exists"
+      },
+      {
+        "type": "filesystem_listing",
+        "resolver": "filesystem_listing"
+      }
+    ],
+    "next_recommendation": "Use directory structure to refine execution scope."
+  }
+}

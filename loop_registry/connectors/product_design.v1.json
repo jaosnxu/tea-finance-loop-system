@@ -1,0 +1,29 @@
+{
+  "name": "product_design",
+  "version": "v1",
+  "purpose": "Route Loop tasks to Product Design workflows for UI context, UX audit, ideation, prototype build, and design QA.",
+  "executor": {
+    "type": "integration_manifest",
+    "required_payload_keys": ["product_design_brief"],
+    "block_on_missing_inputs": false
+  },
+  "integration": {
+    "plugin": "Product Design",
+    "standard_name": "product_design_workflow_adapter",
+    "skills": [
+      "product-design:index",
+      "product-design:get-context",
+      "product-design:ideate",
+      "product-design:image-to-code"
+    ],
+    "routing_rules": [
+      "load product-design:index when the plugin is mentioned",
+      "use get-context before ideation or UI build",
+      "do not build without a visual target unless a focused design workflow supplies one"
+    ]
+  },
+  "template": {
+    "summary": "Prepared Product Design workflow integration.",
+    "next_recommendation": "Provide product_design_brief, Figma file, screenshot, URL, or code target before Product Design execution."
+  }
+}

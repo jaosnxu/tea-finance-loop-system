@@ -1,0 +1,33 @@
+{
+  "name": "finance.v1-workflow-implement",
+  "template": {
+    "summary": "Translated the V1 finance goal into an executable payment workflow implementation track.",
+    "artifacts": [
+      {
+        "type": "implementation_tracks",
+        "value": [
+          "payment_request_create",
+          "approval_status_flow",
+          "finance_execution_record",
+          "ledger_posting",
+          "boss_report_visibility"
+        ]
+      },
+      {
+        "type": "required_statuses",
+        "value": [
+          "application_status",
+          "ocr_status",
+          "payment_status",
+          "ledger_status"
+        ]
+      },
+      {
+        "type": "goal_snapshot",
+        "from_payload_key": "goal",
+        "default": ""
+      }
+    ],
+    "next_recommendation": "Prioritize the payment request creation and status flow before expanding to other modules."
+  }
+}

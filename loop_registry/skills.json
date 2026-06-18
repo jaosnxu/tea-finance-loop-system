@@ -1,0 +1,88 @@
+{
+  "skills": [
+    {
+      "name": "finance.v1-workflow-implement",
+      "version": "v1",
+      "status": "core",
+      "domain": "finance",
+      "tags": ["finance", "payment", "approval", "ledger", "report", "workflow"],
+      "owner": "system",
+      "entry": "loop_registry/skills/finance.v1-workflow-implement.v1.json",
+      "input_schema": "schemas/finance.v1-workflow-implement.input.json",
+      "output_schema": "schemas/finance.v1-workflow-implement.output.json",
+      "trigger_summary": "Use when a finance approval product must implement the V1 payment workflow end to end.",
+      "priority": 5,
+      "standard_name": "domain_skill"
+    },
+    {
+      "name": "finance.organization-config",
+      "version": "v1",
+      "status": "core",
+      "domain": "finance",
+      "tags": ["finance", "organization", "tax", "russia", "configuration"],
+      "owner": "system",
+      "entry": "loop_registry/skills/finance.organization-config.v1.json",
+      "input_schema": "schemas/finance.organization-config.input.json",
+      "output_schema": "schemas/finance.organization-config.output.json",
+      "trigger_summary": "Use when organization-level Russian tax and legal-entity configuration must drive the product design.",
+      "priority": 6,
+      "standard_name": "domain_skill"
+    },
+    {
+      "name": "finance.role-view-build",
+      "version": "v1",
+      "status": "stable",
+      "domain": "finance",
+      "tags": ["finance", "role", "dashboard", "boss", "cashier", "accounting"],
+      "owner": "system",
+      "entry": "loop_registry/skills/finance.role-view-build.v1.json",
+      "input_schema": "schemas/finance.role-view-build.input.json",
+      "output_schema": "schemas/finance.role-view-build.output.json",
+      "trigger_summary": "Use when role-based finance views must be built for boss, finance, cashier, and applicant users.",
+      "priority": 7,
+      "standard_name": "domain_skill"
+    },
+    {
+      "name": "prd.parse",
+      "version": "v1",
+      "status": "core",
+      "domain": "analysis",
+      "tags": ["prd", "planning", "architecture"],
+      "owner": "system",
+      "entry": "loop_registry/skills/prd.parse.v1.json",
+      "input_schema": "schemas/prd.parse.input.json",
+      "output_schema": "schemas/prd.parse.output.json",
+      "trigger_summary": "Use when a formal PRD needs to be translated into executable module structure.",
+      "priority": 10,
+      "standard_name": "planning_skill"
+    },
+    {
+      "name": "backend.schema-design",
+      "version": "v1",
+      "status": "stable",
+      "domain": "backend",
+      "tags": ["schema", "database", "backend"],
+      "owner": "system",
+      "entry": "loop_registry/skills/backend.schema-design.v1.json",
+      "input_schema": "schemas/backend.schema-design.input.json",
+      "output_schema": "schemas/backend.schema-design.output.json",
+      "trigger_summary": "Use when data entities and relationships must be designed from business requirements.",
+      "priority": 20,
+      "standard_name": "implementation_skill"
+    },
+    {
+      "name": "frontend.page-build",
+      "version": "v1",
+      "status": "stable",
+      "domain": "frontend",
+      "tags": ["ui", "frontend", "page"],
+      "owner": "system",
+      "entry": "loop_registry/skills/frontend.page-build.v1.json",
+      "input_schema": "schemas/frontend.page-build.input.json",
+      "output_schema": "schemas/frontend.page-build.output.json",
+      "trigger_summary": "Use when a page or dashboard must be implemented from a structured spec.",
+      "priority": 30,
+      "standard_name": "implementation_skill"
+    }
+  ]
+}

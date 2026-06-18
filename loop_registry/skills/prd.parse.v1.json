@@ -1,0 +1,26 @@
+{
+  "name": "prd.parse",
+  "version": "v1",
+  "purpose": "Translate a formal PRD or task goal into an execution-ready planning package.",
+  "template": {
+    "summary": "Translated task goal into a structured planning package.",
+    "artifacts": [
+      {
+        "type": "module_list",
+        "from_payload_key": "modules",
+        "default": ["goal_analysis", "module_split", "entity_extract", "execution_path"]
+      },
+      {
+        "type": "scope_snapshot",
+        "from_payload_key": "scope",
+        "default": {}
+      },
+      {
+        "type": "goal_snapshot",
+        "from_payload_key": "goal",
+        "default": ""
+      }
+    ],
+    "next_recommendation": "Route execution to backend and frontend build skills as needed."
+  }
+}

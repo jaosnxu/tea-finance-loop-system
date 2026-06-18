@@ -1,0 +1,15 @@
+{
+  "name": "git",
+  "version": "v1",
+  "purpose": "Inspect VCS workflow state: repository, branch, status, changed files, diff stat, and commit plan.",
+  "executor": {
+    "type": "vcs_workflow",
+    "repo_path_from_payload_key": "git_path",
+    "base_ref_from_payload_key": "git_base_ref",
+    "timeout_seconds": 30
+  },
+  "template": {
+    "summary": "Inspected VCS workflow state.",
+    "next_recommendation": "Use VCS artifacts for branch, diff, commit, PR, and merge gate decisions."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "test",
+  "version": "v1",
+  "purpose": "Run one or more CI-style test suites and return structured pass/fail artifacts.",
+  "executor": {
+    "type": "ci_suite",
+    "command_from_payload_key": "test_command",
+    "cwd_from_payload_key": "worktree_path",
+    "default_suites": [
+      {
+        "name": "unit",
+        "command": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]
+      }
+    ],
+    "timeout_seconds": 60
+  },
+  "template": {
+    "summary": "Executed CI test suite.",
+    "next_recommendation": "Use CI suite summary as the primary verification gate signal."
+  }
+}

@@ -1,0 +1,55 @@
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node / Next.js
+node_modules/
+.next/
+.next-*/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Logs and runtime output
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local Loop runtime records
+loop-task-records/
+loop-worktrees/
+task_record.json
+reports.jsonl
+trace.jsonl
+run_report.json
+heartbeat.json
+
+# Local databases and uploads
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+tmp/
+temp/

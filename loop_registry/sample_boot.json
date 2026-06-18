@@ -1,0 +1,48 @@
+{
+  "task_id": "TASK-DEMO-0001",
+  "goal": "Turn a formal PRD into an implementation-ready execution path.",
+  "scope": {
+    "include": [
+      "/Users/jason/Documents/Codex/2026-06-13-new-chat"
+    ],
+    "exclude": [
+      "production"
+    ]
+  },
+  "acceptance": [
+    "Task reaches completed state in the minimal runtime.",
+    "Task record and memory files are written externally."
+  ],
+  "environment": {
+    "source_path": "/Users/jason/Documents/Codex/2026-06-13-new-chat",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": ["filesystem", "browser", "git", "github", "figma", "product_design", "cli", "test", "mcp"],
+    "provided_auth": ["figma_session"],
+    "git_command": ["/bin/echo", "sample git connector output"],
+    "cli_command": ["/bin/echo", "sample cli connector output"],
+    "test_command": ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
+    "mcp_command": ["/bin/echo", "sample mcp bridge output"],
+    "product_design_brief": "Loop Engineering reusable system with GitHub, Figma, and Product Design integration points."
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": true,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": true,
+    "agent_roles": {
+      "writer": "writer",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "demo-namespace"
+  }
+}

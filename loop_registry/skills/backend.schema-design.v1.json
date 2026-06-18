@@ -1,0 +1,20 @@
+{
+  "name": "backend.schema-design",
+  "version": "v1",
+  "purpose": "Generate a minimal data schema artifact from requirements.",
+  "template": {
+    "summary": "Generated a minimal schema design artifact.",
+    "artifacts": [
+      {
+        "type": "entities",
+        "from_payload_key": "entities",
+        "default": ["task_record", "memory_spine", "worktree", "skill_registry"]
+      },
+      {
+        "type": "relationships",
+        "value": ["task->worktree", "task->memory", "runtime->skill_registry"]
+      }
+    ],
+    "next_recommendation": "Use schema artifacts to guide implementation tasks."
+  }
+}

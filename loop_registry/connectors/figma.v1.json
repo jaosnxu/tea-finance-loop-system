@@ -1,0 +1,31 @@
+{
+  "name": "figma",
+  "version": "v1",
+  "purpose": "Route Loop tasks to the Figma MCP app for design file inspection, screenshots, canvas sync, and editable UI generation.",
+  "executor": {
+    "type": "integration_manifest",
+    "required_payload_keys": ["figma_file_key"],
+    "block_on_missing_inputs": false
+  },
+  "integration": {
+    "plugin": "Figma",
+    "standard_name": "figma_canvas_adapter",
+    "mcp_namespace": "mcp__codex_apps__figma",
+    "tools": [
+      "whoami",
+      "get_metadata",
+      "get_screenshot",
+      "get_libraries",
+      "search_design_system",
+      "use_figma",
+      "generate_figma_design",
+      "create_new_file"
+    ],
+    "required_skill_before_write": "figma-use",
+    "supported_targets": ["design", "figjam", "slides"]
+  },
+  "template": {
+    "summary": "Prepared Figma canvas integration.",
+    "next_recommendation": "Provide figma_file_key or create a Figma file before canvas read/write execution."
+  }
+}

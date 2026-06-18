@@ -1,0 +1,13 @@
+{
+  "name": "github",
+  "version": "v1",
+  "purpose": "Prepare or inspect GitHub PR workflow state, checks, and remote merge signals.",
+  "executor": {
+    "type": "github_workflow",
+    "timeout_seconds": 30
+  },
+  "template": {
+    "summary": "Inspected GitHub PR workflow state.",
+    "next_recommendation": "Use GitHub PR and checks state as a remote merge gate signal."
+  }
+}

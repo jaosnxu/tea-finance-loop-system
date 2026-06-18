@@ -1,0 +1,32 @@
+{
+  "name": "finance.organization-config",
+  "template": {
+    "summary": "Mapped the Russian organization and tax configuration requirements into backend-driven product constraints.",
+    "artifacts": [
+      {
+        "type": "organization_config_requirements",
+        "value": [
+          "organization_count_not_hardcoded",
+          "organization_tax_mode_configurable",
+          "organization_bank_accounts_configurable",
+          "group_reporting_toggle_supported",
+          "russian_tax_context_required"
+        ]
+      },
+      {
+        "type": "russian_tax_modes",
+        "value": [
+          "VAT",
+          "USN",
+          "OTHER"
+        ]
+      },
+      {
+        "type": "scope_snapshot",
+        "from_payload_key": "scope",
+        "default": {}
+      }
+    ],
+    "next_recommendation": "Implement an organization settings page that exposes legal entity, tax mode, accounts, and reporting participation."
+  }
+}

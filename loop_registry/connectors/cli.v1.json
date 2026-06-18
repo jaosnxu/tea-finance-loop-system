@@ -1,0 +1,16 @@
+{
+  "name": "cli",
+  "version": "v1",
+  "purpose": "Execute a local CLI command inside the active worktree or configured project directory.",
+  "executor": {
+    "type": "shell",
+    "command_from_payload_key": "cli_command",
+    "cwd_from_payload_key": "cli_path",
+    "default_command": ["/bin/echo", "cli connector not configured"],
+    "timeout_seconds": 60
+  },
+  "template": {
+    "summary": "Executed CLI connector command.",
+    "next_recommendation": "Use CLI output as a structured execution signal for the current loop step."
+  }
+}

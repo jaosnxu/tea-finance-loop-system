@@ -1,0 +1,16 @@
+{
+  "name": "frontend.page-build",
+  "version": "v1",
+  "purpose": "Generate a page build plan for UI-facing work.",
+  "template": {
+    "summary": "Generated page build plan for UI-facing work.",
+    "artifacts": [
+      {
+        "type": "page_map",
+        "from_payload_key": "pages",
+        "default": ["dashboard", "task_detail", "reports", "settings"]
+      }
+    ],
+    "next_recommendation": "Move selected pages into implementation worktrees."
+  }
+}

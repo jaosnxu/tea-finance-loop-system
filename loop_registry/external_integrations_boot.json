@@ -1,0 +1,64 @@
+{
+  "task_id": "TASK-EXTERNAL-INTEGRATIONS",
+  "goal": "Connect Loop Engineering to GitHub repository workflow, Figma canvas workflow, and Product Design workflow.",
+  "scope": {
+    "include": [
+      "/Users/jason/Documents/Codex/2026-06-13-new-chat"
+    ],
+    "exclude": [
+      "production writes without remote identifiers"
+    ]
+  },
+  "acceptance": [
+    "GitHub connector prepares remote PR workflow state or records missing repository configuration.",
+    "Figma connector prepares canvas integration state.",
+    "Product Design connector prepares design workflow routing state.",
+    "Preflight records auth and missing external identifiers without hardcoding credentials."
+  ],
+  "environment": {
+    "source_path": "/Users/jason/Documents/Codex/2026-06-13-new-chat",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "github",
+      "figma",
+      "product_design",
+      "test"
+    ],
+    "provided_auth": [
+      "figma_session"
+    ],
+    "repo": "missing-owner/missing-repo",
+    "figma_file_key": "DVWsGG329BggsIlWbUXBYS",
+    "product_design_brief": "Tea chain Russia internal management backend: Product Design should guide UX structure, Figma should hold editable screens, GitHub should hold PR and checks workflow.",
+    "test_command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ]
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": true,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "agent_roles": {
+      "writer": "writer",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "external-integrations"
+  }
+}

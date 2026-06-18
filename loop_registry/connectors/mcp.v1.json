@@ -1,0 +1,18 @@
+{
+  "name": "mcp",
+  "version": "v1",
+  "purpose": "Execute a real MCP stdio server call, with a bridge-command fallback for local adapters.",
+  "executor": {
+    "type": "mcp_stdio",
+    "server_command_from_payload_key": "mcp_server_command",
+    "bridge_command_from_payload_key": "mcp_command",
+    "tool_name_from_payload_key": "mcp_tool_name",
+    "tool_arguments_from_payload_key": "mcp_tool_arguments",
+    "cwd_from_payload_key": "worktree_path",
+    "timeout_seconds": 45
+  },
+  "template": {
+    "summary": "Executed MCP tool adapter.",
+    "next_recommendation": "Use MCP output as structured external tool context for the current loop step."
+  }
+}

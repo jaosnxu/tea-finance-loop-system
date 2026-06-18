@@ -1,0 +1,560 @@
+{
+  "organizations": [
+    {
+      "id": "org-brand",
+      "displayName": "品牌管理公司",
+      "legalNameRu": "OOO Tea Brand Management",
+      "legalForm": "OOO",
+      "taxMode": "VAT",
+      "taxLabel": "НДС",
+      "baseCurrency": "RUB",
+      "enableMultiCurrency": false,
+      "enableExchangeRate": false,
+      "allowedCurrencies": ["RUB"],
+      "bankAccountCount": 1,
+      "projectCount": 1,
+      "departmentCount": 2,
+      "isActive": true,
+      "includeInGroupReport": true,
+      "settlementRole": "brand"
+    },
+    {
+      "id": "org-import",
+      "displayName": "进出口公司",
+      "legalNameRu": "OOO Tea Import Export",
+      "legalForm": "OOO",
+      "taxMode": "USN",
+      "taxLabel": "УСН",
+      "baseCurrency": "RUB",
+      "enableMultiCurrency": true,
+      "enableExchangeRate": true,
+      "allowedCurrencies": ["RUB", "CNY", "USD"],
+      "bankAccountCount": 1,
+      "projectCount": 1,
+      "departmentCount": 2,
+      "isActive": true,
+      "includeInGroupReport": true,
+      "settlementRole": "import"
+    },
+    {
+      "id": "org-store-kzn",
+      "displayName": "喀山直营店主体",
+      "legalNameRu": "OOO Tea Kazan Store",
+      "legalForm": "OOO",
+      "taxMode": "USN",
+      "taxLabel": "УСН",
+      "baseCurrency": "RUB",
+      "enableMultiCurrency": false,
+      "enableExchangeRate": false,
+      "allowedCurrencies": ["RUB"],
+      "bankAccountCount": 1,
+      "projectCount": 1,
+      "departmentCount": 1,
+      "isActive": true,
+      "includeInGroupReport": true,
+      "settlementRole": "operating"
+    },
+    {
+      "id": "org-store-spb",
+      "displayName": "圣彼得堡直营店主体",
+      "legalNameRu": "OOO Tea SPB Store",
+      "legalForm": "OOO",
+      "taxMode": "USN",
+      "taxLabel": "УСН",
+      "baseCurrency": "RUB",
+      "enableMultiCurrency": false,
+      "enableExchangeRate": false,
+      "allowedCurrencies": ["RUB"],
+      "bankAccountCount": 1,
+      "projectCount": 1,
+      "departmentCount": 1,
+      "isActive": true,
+      "includeInGroupReport": true,
+      "settlementRole": "operating"
+    },
+    {
+      "id": "org-franchise",
+      "displayName": "加盟结算主体",
+      "legalNameRu": "IP Tea Franchise Service",
+      "legalForm": "IP",
+      "taxMode": "USN",
+      "taxLabel": "УСН",
+      "baseCurrency": "RUB",
+      "enableMultiCurrency": false,
+      "enableExchangeRate": false,
+      "allowedCurrencies": ["RUB"],
+      "bankAccountCount": 1,
+      "projectCount": 1,
+      "departmentCount": 1,
+      "isActive": true,
+      "includeInGroupReport": false,
+      "settlementRole": "franchise"
+    }
+  ],
+  "departments": [
+    {
+      "id": "dept-brand-finance",
+      "name": "品牌财务部",
+      "organization": "品牌管理公司",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-finance-group",
+      "isActive": true
+    },
+    {
+      "id": "dept-brand-admin",
+      "name": "品牌管理部",
+      "organization": "品牌管理公司",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-group-admin",
+      "isActive": true
+    },
+    {
+      "id": "dept-import-finance",
+      "name": "进出口财务部",
+      "organization": "进出口公司",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-finance-import",
+      "isActive": true
+    },
+    {
+      "id": "dept-import-procurement",
+      "name": "进出口采购部",
+      "organization": "进出口公司",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-import-manager",
+      "isActive": true
+    },
+    {
+      "id": "dept-kzn-store",
+      "name": "喀山门店运营",
+      "organization": "喀山直营店主体",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-kzn-manager",
+      "isActive": true
+    },
+    {
+      "id": "dept-spb-store",
+      "name": "圣彼得堡门店运营",
+      "organization": "圣彼得堡直营店主体",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-spb-manager",
+      "isActive": true
+    },
+    {
+      "id": "dept-franchise",
+      "name": "加盟服务部",
+      "organization": "加盟结算主体",
+      "parentDepartmentId": null,
+      "managerPersonId": "person-franchise-manager",
+      "isActive": true
+    }
+  ],
+  "persons": [
+    {
+      "id": "person-group-admin",
+      "displayName": "Jason Li",
+      "organization": "品牌管理公司",
+      "departmentId": "dept-brand-admin",
+      "title": "集团负责人",
+      "managerPersonId": null,
+      "phone": "+7 901 100 1001",
+      "email": "jason@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-finance-group",
+      "displayName": "Elena Morozova",
+      "organization": "品牌管理公司",
+      "departmentId": "dept-brand-finance",
+      "title": "集团财务总监",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1002",
+      "email": "finance.group@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-finance-import",
+      "displayName": "Ivan Sokolov",
+      "organization": "进出口公司",
+      "departmentId": "dept-import-finance",
+      "title": "进出口财务经理",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1003",
+      "email": "finance.import@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-cashier-main",
+      "displayName": "Maria Kuznetsova",
+      "organization": "品牌管理公司",
+      "departmentId": "dept-brand-finance",
+      "title": "资金出纳",
+      "managerPersonId": "person-finance-group",
+      "phone": "+7 901 100 1004",
+      "email": "cashier@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-import-manager",
+      "displayName": "Andrey Frolov",
+      "organization": "进出口公司",
+      "departmentId": "dept-import-procurement",
+      "title": "进口采购负责人",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1005",
+      "email": "import.manager@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-kzn-manager",
+      "displayName": "Svetlana Petrova",
+      "organization": "喀山直营店主体",
+      "departmentId": "dept-kzn-store",
+      "title": "喀山门店经理",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1006",
+      "email": "kazan.store@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-spb-manager",
+      "displayName": "Dmitry Volkov",
+      "organization": "圣彼得堡直营店主体",
+      "departmentId": "dept-spb-store",
+      "title": "圣彼得堡门店经理",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1007",
+      "email": "spb.store@tea.local",
+      "isActive": true
+    },
+    {
+      "id": "person-franchise-manager",
+      "displayName": "Olga Romanova",
+      "organization": "加盟结算主体",
+      "departmentId": "dept-franchise",
+      "title": "加盟结算负责人",
+      "managerPersonId": "person-group-admin",
+      "phone": "+7 901 100 1008",
+      "email": "franchise@tea.local",
+      "isActive": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-brand-hq",
+      "name": "品牌中心项目",
+      "organization": "品牌管理公司",
+      "type": "shared",
+      "code": "BRAND-HQ",
+      "managerPersonId": "person-group-admin",
+      "isActive": true
+    },
+    {
+      "id": "project-import-hub",
+      "name": "进口采购项目",
+      "organization": "进出口公司",
+      "type": "project",
+      "code": "IMPORT-HUB",
+      "managerPersonId": "person-import-manager",
+      "isActive": true
+    },
+    {
+      "id": "project-store-kzn",
+      "name": "喀山门店",
+      "organization": "喀山直营店主体",
+      "type": "store",
+      "code": "KZN-STORE",
+      "managerPersonId": "person-kzn-manager",
+      "isActive": true
+    },
+    {
+      "id": "project-store-spb",
+      "name": "圣彼得堡门店",
+      "organization": "圣彼得堡直营店主体",
+      "type": "store",
+      "code": "SPB-STORE",
+      "managerPersonId": "person-spb-manager",
+      "isActive": true
+    },
+    {
+      "id": "project-franchise-settlement",
+      "name": "加盟结算项目",
+      "organization": "加盟结算主体",
+      "type": "project",
+      "code": "FRA-SET",
+      "managerPersonId": "person-franchise-manager",
+      "isActive": true
+    }
+  ],
+  "roleConfigs": [
+    {
+      "id": "boss",
+      "label": "老板",
+      "description": "查看集团整体经营、审批关键单据、查看报表并配置系统核心规则。",
+      "pageAccess": ["dashboard", "approvals", "ocr_workbench", "payment_requests", "purchase_requests", "contract_requests", "payment_execution", "ledger", "reports", "settings", "settings_organization", "settings_flows", "settings_forms", "settings_ocr_rules", "settings_bank_accounts", "settings_exchange_rates", "settings_ledger_mappings", "settings_payment_parties", "settings_access", "settings_master_data"],
+      "dataScope": "all",
+      "configPermissions": {
+        "organizations": true,
+        "masterData": true,
+        "flows": true,
+        "forms": true,
+        "ocrRules": true,
+        "bankAccounts": true,
+        "exchangeRates": true,
+        "ledgerMappings": true,
+        "paymentParties": true,
+        "access": true
+      },
+      "approvalPermissions": {
+        "approve": true,
+        "reject": true,
+        "returnToDraft": false,
+        "confirmOcr": false,
+        "executePayment": false,
+        "cancelOwnRequest": false
+      }
+    },
+    {
+      "id": "finance",
+      "label": "财务",
+      "description": "处理审批、付款执行、总账、报表和部分主数据维护。",
+      "pageAccess": ["dashboard", "approvals", "ocr_workbench", "payment_requests", "purchase_requests", "contract_requests", "payment_execution", "ledger", "reports", "settings", "settings_organization", "settings_bank_accounts", "settings_ocr_rules", "settings_exchange_rates", "settings_ledger_mappings", "settings_payment_parties", "settings_access", "settings_master_data"],
+      "dataScope": "all",
+      "configPermissions": {
+        "organizations": true,
+        "masterData": true,
+        "flows": false,
+        "forms": false,
+        "ocrRules": true,
+        "bankAccounts": true,
+        "exchangeRates": true,
+        "ledgerMappings": true,
+        "paymentParties": true,
+        "access": true
+      },
+      "approvalPermissions": {
+        "approve": true,
+        "reject": true,
+        "returnToDraft": false,
+        "confirmOcr": true,
+        "executePayment": true,
+        "cancelOwnRequest": false
+      }
+    },
+    {
+      "id": "cashier",
+      "label": "出纳",
+      "description": "确认 OCR 异常、核对付款执行和相关单据。",
+      "pageAccess": ["dashboard", "approvals", "ocr_workbench", "payment_requests", "purchase_requests", "contract_requests", "payment_execution"],
+      "dataScope": "organization",
+      "configPermissions": {
+        "organizations": false,
+        "masterData": false,
+        "flows": false,
+        "forms": false,
+        "ocrRules": false,
+        "bankAccounts": false,
+        "exchangeRates": false,
+        "ledgerMappings": false,
+        "paymentParties": false,
+        "access": false
+      },
+      "approvalPermissions": {
+        "approve": false,
+        "reject": false,
+        "returnToDraft": false,
+        "confirmOcr": true,
+        "executePayment": true,
+        "cancelOwnRequest": false
+      }
+    },
+    {
+      "id": "applicant",
+      "label": "申请人",
+      "description": "发起和查看本人相关申请，处理被驳回或退回修改的单据。",
+      "pageAccess": ["dashboard", "payment_requests", "purchase_requests", "contract_requests"],
+      "dataScope": "own",
+      "configPermissions": {
+        "organizations": false,
+        "masterData": false,
+        "flows": false,
+        "forms": false,
+        "ocrRules": false,
+        "bankAccounts": false,
+        "exchangeRates": false,
+        "ledgerMappings": false,
+        "paymentParties": false,
+        "access": false
+      },
+      "approvalPermissions": {
+        "approve": false,
+        "reject": false,
+        "returnToDraft": true,
+        "confirmOcr": false,
+        "executePayment": false,
+        "cancelOwnRequest": true
+      }
+    }
+  ],
+  "userAccounts": [
+    {
+      "id": "user-boss-001",
+      "username": "jason.admin",
+      "password": "113113",
+      "displayName": "Jason Li",
+      "role": "boss",
+      "organizationScope": ["品牌管理公司", "进出口公司", "喀山直营店主体", "圣彼得堡直营店主体", "加盟结算主体"],
+      "isActive": true
+    },
+    {
+      "id": "user-finance-001",
+      "username": "finance.group",
+      "password": "TeaFinGroup2026!",
+      "displayName": "Elena Morozova",
+      "role": "finance",
+      "organizationScope": ["品牌管理公司", "进出口公司", "喀山直营店主体", "圣彼得堡直营店主体", "加盟结算主体"],
+      "isActive": true
+    },
+    {
+      "id": "user-finance-002",
+      "username": "finance.import",
+      "password": "TeaImport2026!",
+      "displayName": "Ivan Sokolov",
+      "role": "finance",
+      "organizationScope": ["进出口公司", "品牌管理公司"],
+      "isActive": true
+    },
+    {
+      "id": "user-cashier-001",
+      "username": "cashier.main",
+      "password": "TeaCash2026!",
+      "displayName": "Maria Kuznetsova",
+      "role": "cashier",
+      "organizationScope": ["品牌管理公司", "进出口公司", "喀山直营店主体", "圣彼得堡直营店主体"],
+      "isActive": true
+    },
+    {
+      "id": "user-applicant-001",
+      "username": "store.applicant",
+      "password": "TeaApply2026!",
+      "displayName": "Svetlana Petrova",
+      "role": "applicant",
+      "organizationScope": ["喀山直营店主体", "圣彼得堡直营店主体"],
+      "isActive": true
+    }
+  ],
+  "bankAccounts": [
+    {
+      "id": "ba-001",
+      "organization": "品牌管理公司",
+      "accountName": "品牌管理公司 - RUB 主账户",
+      "bankName": "Sberbank",
+      "accountNumber": "40702810900010001001",
+      "currency": "RUB",
+      "balance": 4200000,
+      "isDefault": true,
+      "isActive": true
+    },
+    {
+      "id": "ba-002",
+      "organization": "进出口公司",
+      "accountName": "进出口公司 - RUB 结算账户",
+      "bankName": "VTB",
+      "accountNumber": "40702810900010002002",
+      "currency": "RUB",
+      "balance": 5180000,
+      "isDefault": true,
+      "isActive": true
+    },
+    {
+      "id": "ba-003",
+      "organization": "喀山直营店主体",
+      "accountName": "喀山直营店主体 - RUB 运营账户",
+      "bankName": "Alfa Bank",
+      "accountNumber": "40702810900010003003",
+      "currency": "RUB",
+      "balance": 1360000,
+      "isDefault": true,
+      "isActive": true
+    },
+    {
+      "id": "ba-004",
+      "organization": "圣彼得堡直营店主体",
+      "accountName": "圣彼得堡直营店主体 - RUB 运营账户",
+      "bankName": "T-Bank",
+      "accountNumber": "40702810900010004004",
+      "currency": "RUB",
+      "balance": 980000,
+      "isDefault": true,
+      "isActive": true
+    },
+    {
+      "id": "ba-005",
+      "organization": "加盟结算主体",
+      "accountName": "加盟结算主体 - RUB 结算账户",
+      "bankName": "Sovcombank",
+      "accountNumber": "40702810900010005005",
+      "currency": "RUB",
+      "balance": 640000,
+      "isDefault": true,
+      "isActive": true
+    }
+  ],
+  "paymentParties": [
+    {
+      "id": "pp-001",
+      "name": "喀山设备供应商A",
+      "type": "supplier",
+      "organizationScope": ["喀山直营店主体", "品牌管理公司"],
+      "bankName": "Sberbank",
+      "bankAccount": "40702810900010000001",
+      "contactName": "Anton",
+      "phone": "+7 900 000 0001",
+      "isActive": true
+    },
+    {
+      "id": "pp-002",
+      "name": "俄境物流代理B",
+      "type": "supplier",
+      "organizationScope": ["进出口公司", "品牌管理公司"],
+      "bankName": "VTB",
+      "bankAccount": "40702810900010000002",
+      "contactName": "Irina",
+      "phone": "+7 900 000 0002",
+      "isActive": true
+    },
+    {
+      "id": "pp-003",
+      "name": "品牌管理公司",
+      "type": "internal",
+      "organizationScope": ["进出口公司", "喀山直营店主体", "圣彼得堡直营店主体"],
+      "bankName": "Alfa Bank",
+      "bankAccount": "40702810900010000003",
+      "contactName": "集团财务",
+      "phone": "+7 900 000 0003",
+      "isActive": true
+    },
+    {
+      "id": "pp-004",
+      "name": "门店临时维修个人",
+      "type": "person",
+      "organizationScope": ["喀山直营店主体", "圣彼得堡直营店主体"],
+      "bankName": "T-Bank",
+      "bankAccount": "40817810000010000004",
+      "contactName": "Pavel",
+      "phone": "+7 900 000 0004",
+      "isActive": true
+    },
+    {
+      "id": "pp-005",
+      "name": "加盟服务商C",
+      "type": "supplier",
+      "organizationScope": ["加盟结算主体"],
+      "bankName": "Sovcombank",
+      "bankAccount": "40702810900010000005",
+      "contactName": "Olga",
+      "phone": "+7 900 000 0005",
+      "isActive": true
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "task_id": "TASK-TEA-FINANCE-V1",
+  "goal": "Build V1 of the tea finance system payment workflow: payment request, approval states, finance execution, ledger entry, and report visibility.",
+  "scope": {
+    "include": [
+      "/Users/jason/Documents/Codex/2026-06-13-new-chat/tea-finance-system"
+    ],
+    "exclude": [
+      "production",
+      "public seal workflow",
+      "mobile"
+    ]
+  },
+  "acceptance": [
+    "Payment request list and detail pages reflect the V1 payment workflow.",
+    "Application status, OCR status, payment status, and ledger status are represented in the product.",
+    "Finance execution and ledger views align with the payment workflow.",
+    "Boss-facing report view reflects aggregate cashflow and organization-level visibility."
+  ],
+  "environment": {
+    "source_path": "/Users/jason/Documents/Codex/2026-06-13-new-chat/tea-finance-system",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "filesystem",
+      "browser",
+      "git",
+      "github",
+      "figma",
+      "product_design",
+      "cli",
+      "test",
+      "mcp"
+    ],
+    "provided_auth": ["figma_session"],
+    "figma_file_key": "DVWsGG329BggsIlWbUXBYS",
+    "browser_target": "http://localhost:3000",
+    "repo": "tea-finance-system",
+    "git_command": ["/bin/echo", "tea finance git connector placeholder"],
+    "cli_command": ["npm", "run", "test:db"],
+    "test_command": ["npm", "run", "build"],
+    "mcp_command": ["/bin/echo", "tea finance mcp bridge placeholder"],
+    "product_design_brief": "Tea chain Russia internal management backend: Chinese tea-chain admin structure, Russian organization, finance, iiko, warehouse, approval, reporting context."
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": true,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": true,
+    "agent_roles": {
+      "writer": "writer",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "tea-finance-v1"
+  }
+}
