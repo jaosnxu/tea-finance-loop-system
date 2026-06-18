@@ -48,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
                     "current_status": snapshot["current_status"],
                     "recent_actions": snapshot["recent_actions"],
                     "recent_intent_debt": snapshot["recent_intent_debt"],
+                    "recent_regression_candidates": snapshot["recent_regression_candidates"],
                     "recent_successes": snapshot["recent_successes"],
                     "recent_failures": snapshot["recent_failures"],
                     "loaded_files": sorted(snapshot["files"].keys()),

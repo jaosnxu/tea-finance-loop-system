@@ -406,6 +406,48 @@ class LoopRuntimeTests(unittest.TestCase):
             artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
             self.assertIn("github_remote_status", artifact_types)
 
+    def test_merge_gate_blocks_failed_remote_status_checks(self) -> None:
+        repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-GITHUB-MERGE-BLOCKED",
+                goal="Block when GitHub remote checks are failing.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Remote PR checks must be successful."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["github"],
+                    "repo": "owner/repo",
+                    "github_command": ["python3", "-c", "import json; print(json.dumps({'state':'failure'}))"],
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "merge_gate_required": True,
+                    "require_remote_pr_artifact": True,
+                    "require_remote_status_success": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "github-merge-blocked-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal()
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(runtime.context.task_record.gate_status["merge_gate"]["status"], "blocked")
+            self.assertEqual(
+                runtime.context.task_record.gate_status["merge_gate"]["reason"],
+                "GitHub remote status checks are not successful",
+            )
+
     def test_runtime_routes_figma_and_product_design_connectors(self) -> None:
         repo_root = Path("/Users/jason/Documents/Codex/2026-06-13-new-chat")
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:

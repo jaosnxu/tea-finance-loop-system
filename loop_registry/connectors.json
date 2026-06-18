@@ -20,7 +20,7 @@
       "version": "v1",
       "status": "stable",
       "target": "browser",
-      "capabilities": ["open", "inspect", "screenshot"],
+      "capabilities": ["open", "inspect", "screenshot", "ui_acceptance"],
       "risk_level": "low",
       "mode": "read_only",
       "auth_requirements": [],

@@ -36,6 +36,15 @@
     "provided_auth": ["figma_session", "token"],
     "figma_file_key": "DVWsGG329BggsIlWbUXBYS",
     "browser_target": "http://localhost:3000",
+    "ui_acceptance_paths": [
+      "/login",
+      "/dashboard",
+      "/dashboard/approvals",
+      "/dashboard/payments",
+      "/dashboard/ledger",
+      "/dashboard/reports",
+      "/dashboard/settings/access"
+    ],
     "repo": "jaosnxu/tea-finance-loop-system",
     "github_command": [
       "/Users/jason/Documents/Codex/tools/bin/gh",

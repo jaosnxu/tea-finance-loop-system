@@ -65,5 +65,16 @@ def merge_gate(policy: dict, artifacts: list[dict], gate_status: dict) -> dict:
             return {"status": "blocked", "reason": "GitHub remote PR status missing"}
         if not any(isinstance(status, dict) and status.get("available") for status in remote_status):
             return {"status": "blocked", "reason": "GitHub remote PR status is not available"}
+        if policy.get("require_remote_status_success", False):
+            if not any(_remote_status_success(status) for status in remote_status):
+                return {"status": "blocked", "reason": "GitHub remote status checks are not successful"}
 
     return {"status": "passed", "reason": "merge gate passed"}
+
+
+def _remote_status_success(status: dict) -> bool:
+    if not isinstance(status, dict) or not status.get("available"):
+        return False
+    value = status.get("json") if isinstance(status.get("json"), dict) else status
+    state = str(value.get("state") or value.get("conclusion") or value.get("status") or "").lower()
+    return state in {"success", "passed", "completed"}

@@ -19,8 +19,11 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue((Path(root_dir) / "memory" / "projects" / "tea-finance-system.md").exists())
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "regression_candidates.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "current_status.json").exists())
             self.assertIn("project_standards.md", snapshot["files"])
+            self.assertIn("verification/regression_policy.md", snapshot["files"])
+            self.assertIn("backlog/loop-engineering.json", snapshot["files"])
             self.assertEqual(snapshot["recent_actions"], [])
 
     def test_runtime_loads_repository_memory_and_records_actions(self) -> None:
@@ -109,12 +112,17 @@ class RepositoryMemoryTests(unittest.TestCase):
             memory_store.save(runtime.context.memory)
 
             intent_debt_log = Path(repo_dir) / "memory" / "intent_debt.jsonl"
+            regression_log = Path(repo_dir) / "memory" / "regression_candidates.jsonl"
             debts = [json.loads(line) for line in intent_debt_log.read_text(encoding="utf-8").splitlines()]
+            regression_candidates = [json.loads(line) for line in regression_log.read_text(encoding="utf-8").splitlines()]
             status = json.loads((Path(repo_dir) / "memory" / "current_status.json").read_text(encoding="utf-8"))
 
             self.assertEqual(runtime.context.task_record.status, "blocked")
             self.assertTrue(debts)
+            self.assertTrue(regression_candidates)
             self.assertEqual(debts[-1]["task_id"], payload.task_id)
+            self.assertEqual(regression_candidates[-1]["task_id"], payload.task_id)
+            self.assertEqual(regression_candidates[-1]["failure_type"], "permission_error")
             self.assertEqual(status["status"], "blocked")
             self.assertIsNotNone(status["intent_debt"])
 
@@ -166,6 +174,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             report = json.loads(completed.stdout)
             self.assertEqual(report["status"], "available")
             self.assertIn("project_standards.md", report["loaded_files"])
+            self.assertIn("recent_regression_candidates", report)
 
 
 if __name__ == "__main__":

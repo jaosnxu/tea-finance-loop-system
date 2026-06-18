@@ -81,6 +81,18 @@ class ConnectorExecutionTests(unittest.TestCase):
         stdout = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "stdout")
         self.assertEqual(stdout, "bridge-ok")
 
+    def test_browser_connector_reports_ui_acceptance_paths(self) -> None:
+        result = execute_connector(
+            _connector_meta("browser", "browser", "loop_registry/connectors/browser.v1.json"),
+            {
+                "target": "http://localhost:3000",
+                "ui_acceptance_paths": ["/login", "/dashboard"],
+            },
+        )
+        self.assertEqual(result["status"], "completed")
+        paths = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "ui_acceptance_paths")
+        self.assertEqual(paths, ["/login", "/dashboard"])
+
     def test_mcp_connector_executes_stdio_protocol(self) -> None:
         server_code = r'''
 import json
@@ -150,6 +162,9 @@ while True:
         self.assertEqual(result["status"], "completed")
         artifact_types = {artifact["type"] for artifact in result["artifacts"]}
         self.assertIn("github_pr_plan", artifact_types)
+        plan = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "github_pr_plan")
+        self.assertIn("open_draft_pr", plan["workflow_steps"])
+        self.assertIn("remote_status_checks", plan["required_gates"])
         remote = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "github_remote_status")
         self.assertFalse(remote["available"])
 

@@ -105,6 +105,30 @@ Deferred:
 - Mobile app.
 - Full automatic intercompany offset.
 """,
+    "backlog/loop-engineering.json": """{
+  "project": "loop-engineering",
+  "updated_at": "2026-06-18",
+  "items": []
+}
+""",
+    "backlog/tea-finance-system.json": """{
+  "project": "tea-finance-system",
+  "updated_at": "2026-06-18",
+  "items": []
+}
+""",
+    "verification/ui_acceptance.md": """# UI Acceptance Standard
+
+Define browser verification before production release.
+""",
+    "verification/regression_policy.md": """# Regression Policy
+
+Failures should become regression candidates and tests.
+""",
+    "verification/production_risk_policy.md": """# Production Risk Policy
+
+Production writes require explicit human approval.
+""",
 }
 
 
@@ -113,6 +137,7 @@ class RepositoryMemory:
         self.root = Path(root)
         self.action_log_path = self.root / "action_log.jsonl"
         self.intent_debt_path = self.root / "intent_debt.jsonl"
+        self.regression_candidate_path = self.root / "regression_candidates.jsonl"
         self.current_status_path = self.root / "current_status.json"
         self.success_log_path = self.root / "experience" / "successes.jsonl"
         self.failure_log_path = self.root / "experience" / "failures.jsonl"
@@ -120,6 +145,8 @@ class RepositoryMemory:
     def initialize(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         (self.root / "projects").mkdir(parents=True, exist_ok=True)
+        (self.root / "backlog").mkdir(parents=True, exist_ok=True)
+        (self.root / "verification").mkdir(parents=True, exist_ok=True)
         (self.root / "runs").mkdir(parents=True, exist_ok=True)
         (self.root / "experience").mkdir(parents=True, exist_ok=True)
         for relative_path, default_content in REQUIRED_MEMORY_FILES.items():
@@ -127,7 +154,13 @@ class RepositoryMemory:
             if not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(default_content, encoding="utf-8")
-        for path in [self.action_log_path, self.intent_debt_path, self.success_log_path, self.failure_log_path]:
+        for path in [
+            self.action_log_path,
+            self.intent_debt_path,
+            self.regression_candidate_path,
+            self.success_log_path,
+            self.failure_log_path,
+        ]:
             if not path.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("", encoding="utf-8")
@@ -159,6 +192,7 @@ class RepositoryMemory:
             "files": files,
             "recent_actions": self._read_jsonl_tail(self.action_log_path, recent_actions),
             "recent_intent_debt": self._read_jsonl_tail(self.intent_debt_path, recent_actions),
+            "recent_regression_candidates": self._read_jsonl_tail(self.regression_candidate_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
             "recent_failures": self._read_jsonl_tail(self.failure_log_path, recent_actions),
             "current_status": json.loads(self.current_status_path.read_text(encoding="utf-8")),
@@ -248,6 +282,31 @@ class RepositoryMemory:
                 "timestamp": utc_now(),
                 "task_id": task_id,
                 "debt": debt,
+            },
+        )
+
+    def append_regression_candidate(
+        self,
+        *,
+        task_id: str,
+        failure_type: str,
+        stage: str,
+        summary: str,
+        reproduction: str,
+        expected_behavior: str,
+    ) -> None:
+        self.initialize()
+        self._append_jsonl(
+            self.regression_candidate_path,
+            {
+                "timestamp": utc_now(),
+                "task_id": task_id,
+                "failure_type": failure_type,
+                "stage": stage,
+                "summary": summary,
+                "reproduction": reproduction,
+                "expected_behavior": expected_behavior,
+                "test_status": "candidate",
             },
         )
 

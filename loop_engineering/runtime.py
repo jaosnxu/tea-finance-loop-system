@@ -61,6 +61,7 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
                         "current_status": repository_memory.get("current_status", {}),
                     },
                 ],
@@ -71,6 +72,7 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
                         "recent_failure_count": len(repository_memory.get("recent_failures", [])),
                         "current_status": repository_memory.get("current_status", {}),
@@ -222,6 +224,14 @@ class LoopRuntime:
                     summary=result.summary,
                     recommendation="Review repair path and update routing or policy.",
                 )
+                self.repository_memory_store.append_regression_candidate(
+                    task_id=record.task_id,
+                    failure_type=result.failure_type,
+                    stage=result.state,
+                    summary=result.summary,
+                    reproduction=f"Run task {record.task_id} through stage {result.state}.",
+                    expected_behavior="The same failure type should be covered by a regression test or explicit policy gate.",
+                )
         if result.next_state == "completed":
             record.status = "completed"
             record.current_stage = "completed"
@@ -333,6 +343,7 @@ class LoopRuntime:
                             "worktree_path": self.context.primary_worktree.path,
                             "git_path": self.context.environment.get("source_path", "."),
                             "target": self.context.environment.get("browser_target", "about:blank"),
+                            "ui_acceptance_paths": self.context.environment.get("ui_acceptance_paths", []),
                             "repo": self.context.environment.get("repo", "unknown"),
                             "github_command": self.context.environment.get("github_command"),
                             "github_pr_number": self.context.environment.get("github_pr_number"),

@@ -1,0 +1,62 @@
+{
+  "project": "loop-engineering",
+  "updated_at": "2026-06-18",
+  "items": [
+    {
+      "id": "LOOP-001",
+      "title": "Repository memory spine",
+      "status": "done",
+      "acceptance": [
+        "Runtime reads repository memory during understanding.",
+        "Every stage appends action_log.jsonl.",
+        "current_status.json and runs/TASK.json are written."
+      ]
+    },
+    {
+      "id": "LOOP-002",
+      "title": "Remote CI gate",
+      "status": "done",
+      "acceptance": [
+        "GitHub Actions runs Loop runtime tests.",
+        "GitHub Actions runs tea finance build and database tests."
+      ]
+    },
+    {
+      "id": "LOOP-003",
+      "title": "PR automation contract",
+      "status": "done",
+      "acceptance": [
+        "GitHub connector emits branch, commit, push, PR, checks, and merge workflow plan.",
+        "Remote status checks are represented as merge gate artifacts."
+      ]
+    },
+    {
+      "id": "LOOP-004",
+      "title": "Regression candidate capture",
+      "status": "done",
+      "acceptance": [
+        "Failures are written to repository memory.",
+        "Blocked intent debt is written to intent_debt.jsonl.",
+        "Regression policy exists in repository memory."
+      ]
+    },
+    {
+      "id": "LOOP-005",
+      "title": "Browser UI verification contract",
+      "status": "done",
+      "acceptance": [
+        "UI verification checklist exists for managed projects.",
+        "Loop can require browser verification before production release."
+      ]
+    },
+    {
+      "id": "LOOP-006",
+      "title": "Production risk gate",
+      "status": "done",
+      "acceptance": [
+        "Production risk policy exists.",
+        "Production writes require explicit approval and cannot auto-retry."
+      ]
+    }
+  ]
+}

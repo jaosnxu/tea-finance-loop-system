@@ -12,6 +12,10 @@
       {
         "type": "browser_mode",
         "resolver": "browser_mode"
+      },
+      {
+        "type": "ui_acceptance_paths",
+        "resolver": "ui_acceptance_paths"
       }
     ],
     "next_recommendation": "Open target in browser execution environment when UI verification is needed."

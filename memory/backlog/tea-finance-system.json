@@ -1,0 +1,50 @@
+{
+  "project": "tea-finance-system",
+  "updated_at": "2026-06-18",
+  "items": [
+    {
+      "id": "TEA-001",
+      "title": "Payment workflow V1",
+      "status": "in_progress",
+      "acceptance": [
+        "Payment request -> approval -> finance execution -> ledger -> reports is runnable.",
+        "Application, OCR, payment, and ledger statuses are visible."
+      ]
+    },
+    {
+      "id": "TEA-002",
+      "title": "Organization configuration",
+      "status": "in_progress",
+      "acceptance": [
+        "Organizations can be added or removed from backend configuration.",
+        "Tax mode, default currency, store relationship, and reporting inclusion are configurable."
+      ]
+    },
+    {
+      "id": "TEA-003",
+      "title": "Access and permissions",
+      "status": "in_progress",
+      "acceptance": [
+        "Login, users, roles, organization scope, data permissions, approval permissions, and menu access are configured."
+      ]
+    },
+    {
+      "id": "TEA-004",
+      "title": "Ledger and reports",
+      "status": "in_progress",
+      "acceptance": [
+        "Ledger entries are created from approved financial workflow events.",
+        "Boss can see group and organization cashflow/report views."
+      ]
+    },
+    {
+      "id": "TEA-005",
+      "title": "iiko and warehouse planning",
+      "status": "planned",
+      "acceptance": [
+        "iiko integration boundary is documented.",
+        "Central warehouse and store warehouse flows are planned before implementation."
+      ]
+    }
+  ]
+}

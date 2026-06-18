@@ -349,6 +349,8 @@ def _resolve_template_value(connector: ConnectorMeta, resolver: str | None, payl
         return payload.get("target", "about:blank")
     if resolver == "browser_mode":
         return connector.mode
+    if resolver == "ui_acceptance_paths":
+        return payload.get("ui_acceptance_paths", [])
     if resolver == "github_repo":
         return payload.get("repo", "unknown")
     if resolver == "github_capabilities":
