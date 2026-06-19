@@ -386,6 +386,13 @@ class LoopRuntime:
         selected_skill_names = self.context.memory.task_memory.get("selected_skills", [])
         skill_outputs = []
         connector_outputs = []
+        source_path = self.context.environment.get("source_path")
+        connector_worktree_path = (
+            self.context.environment.get("worktree_path")
+            or source_path
+            or self.context.primary_worktree.path
+        )
+        connector_repo_path = self.context.environment.get("git_path") or source_path or connector_worktree_path
         for skill in self.context.skills:
             if skill.name in selected_skill_names:
                 skill_outputs.append(
@@ -400,41 +407,48 @@ class LoopRuntime:
                     )
                 )
         selected_connector_names = self.context.memory.task_memory.get("selected_connectors", [])
-        for connector in self.context.connectors:
-            if connector.name in selected_connector_names:
-                connector_outputs.append(
-                    execute_connector(
-                        connector,
-                        {
-                            "path": self.context.environment.get("source_path", "."),
-                            "worktree_path": self.context.primary_worktree.path,
-                            "git_path": self.context.environment.get("source_path", "."),
-                            "target": self.context.environment.get("browser_target", "about:blank"),
-                            "ui_acceptance_paths": self.context.environment.get("ui_acceptance_paths", []),
-                            "repo": self.context.environment.get("repo", "unknown"),
-                            "github_command": self.context.environment.get("github_command"),
-                            "github_pr_number": self.context.environment.get("github_pr_number"),
-                            "github_head_ref": self.context.environment.get("github_head_ref"),
-                            "github_base_ref": self.context.environment.get("github_base_ref"),
-                            "figma_file_key": self.context.environment.get("figma_file_key"),
-                            "figma_node_id": self.context.environment.get("figma_node_id"),
-                            "product_design_brief": self.context.environment.get("product_design_brief"),
-                            "product_design_target": self.context.environment.get("product_design_target"),
-                            "git_command": self.context.environment.get("git_command"),
-                            "git_base_ref": self.context.environment.get("git_base_ref"),
-                            "cli_command": self.context.environment.get("cli_command"),
-                            "cli_path": self.context.environment.get("cli_path") or self.context.environment.get("source_path", "."),
-                            "test_command": self.context.environment.get("test_command"),
-                            "test_setup_command": self.context.environment.get("test_setup_command"),
-                            "test_suites": self.context.environment.get("test_suites"),
-                            "mcp_command": self.context.environment.get("mcp_command"),
-                            "mcp_server_command": self.context.environment.get("mcp_server_command"),
-                            "mcp_tool_name": self.context.environment.get("mcp_tool_name"),
-                            "mcp_tool_arguments": self.context.environment.get("mcp_tool_arguments"),
-                            "connector_timeout_seconds": self.context.environment.get("connector_timeout_seconds"),
-                        },
-                    )
+        selected_connectors = [
+            connector
+            for connector in self.context.connectors
+            if connector.name in selected_connector_names
+        ]
+        selected_connectors.sort(key=_connector_execution_order)
+        for connector in selected_connectors:
+            connector_outputs.append(
+                execute_connector(
+                    connector,
+                    {
+                        "path": source_path or connector_worktree_path,
+                        "worktree_path": connector_worktree_path,
+                        "git_path": connector_repo_path,
+                        "target": self.context.environment.get("browser_target", "about:blank"),
+                        "ui_acceptance_paths": self.context.environment.get("ui_acceptance_paths", []),
+                        "repo": self.context.environment.get("repo", "unknown"),
+                        "github_command": self.context.environment.get("github_command"),
+                        "github_pr_number": self.context.environment.get("github_pr_number"),
+                        "github_head_ref": self.context.environment.get("github_head_ref"),
+                        "github_base_ref": self.context.environment.get("github_base_ref"),
+                        "figma_file_key": self.context.environment.get("figma_file_key"),
+                        "figma_node_id": self.context.environment.get("figma_node_id"),
+                        "product_design_brief": self.context.environment.get("product_design_brief"),
+                        "product_design_target": self.context.environment.get("product_design_target"),
+                        "git_command": self.context.environment.get("git_command"),
+                        "git_base_ref": self.context.environment.get("git_base_ref"),
+                        "cli_command": self.context.environment.get("cli_command"),
+                        "cli_path": self.context.environment.get("cli_path") or source_path or connector_worktree_path,
+                        "codex_command": self.context.environment.get("codex_command"),
+                        "codex_path": self.context.environment.get("codex_path") or connector_worktree_path,
+                        "test_command": self.context.environment.get("test_command"),
+                        "test_setup_command": self.context.environment.get("test_setup_command"),
+                        "test_suites": self.context.environment.get("test_suites"),
+                        "mcp_command": self.context.environment.get("mcp_command"),
+                        "mcp_server_command": self.context.environment.get("mcp_server_command"),
+                        "mcp_tool_name": self.context.environment.get("mcp_tool_name"),
+                        "mcp_tool_arguments": self.context.environment.get("mcp_tool_arguments"),
+                        "connector_timeout_seconds": self.context.environment.get("connector_timeout_seconds"),
+                    },
                 )
+            )
         artifacts = [{"type": "execution_log", "worktree_id": self.context.primary_worktree.worktree_id}]
         failed_connector = next((output for output in connector_outputs if output.get("status") == "failed"), None)
         if failed_connector:
@@ -817,6 +831,14 @@ class LoopRuntime:
                 or "script" in text
             ):
                 score += 8
+            if connector.name == "codex_executor" and (
+                self.context.environment.get("codex_command")
+                or "codex" in text
+                or "develop" in text
+                or "implementation" in text
+                or "code" in text
+            ):
+                score += 10
             if connector.name == "test" and (
                 self.context.environment.get("test_command")
                 or "test" in text
@@ -906,6 +928,22 @@ def _generic_skill_fallback(skills) -> list[str]:
     if generic:
         return [skill.name for skill in sorted(generic, key=lambda skill: skill.priority)[:3]]
     return [skill.name for skill in skills[:3]]
+
+
+def _connector_execution_order(connector) -> tuple[int, int]:
+    phase_order = {
+        "codex_executor": 10,
+        "filesystem": 20,
+        "git": 30,
+        "cli": 40,
+        "mcp": 45,
+        "test": 50,
+        "browser": 60,
+        "github": 70,
+        "figma": 80,
+        "product_design": 80,
+    }
+    return (phase_order.get(connector.name, 100), connector.priority)
 
 
 def _scope_exclusion_tokens(scope: dict) -> set[str]:

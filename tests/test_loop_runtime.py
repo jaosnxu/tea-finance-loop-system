@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from loop_engineering.boot import boot_runtime, validate_boot_payload
 from loop_engineering.models import BootPayload
@@ -439,6 +440,62 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertIn("tool_contracts", artifact_types)
             self.assertEqual(runtime.context.task_record.gate_status["preflight_gate"]["status"], "passed")
             self.assertEqual(runtime.context.task_record.gate_status["merge_gate"]["status"], "passed")
+
+    def test_runtime_executes_codex_before_git_in_the_same_repo_path(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
+            subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            payload = BootPayload(
+                task_id="TASK-TEST-CODEX-GIT-ORDER",
+                goal="Execute implementation through Codex, then inspect git state in the same repository.",
+                scope={"include": [str(git_repo_dir)]},
+                acceptance=["Codex writes before git inspection in the same working tree."],
+                environment={
+                    "source_path": str(git_repo_dir),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["codex_executor", "git"],
+                    "codex_command": ["python3", "-c", "print('loop-codex-ok')"],
+                    "git_base_ref": "HEAD",
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "codex-git-order"},
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.context.task_record.current_stage = "executing"
+            runtime.context.memory.task_memory["selected_connectors"] = ["git", "codex_executor"]
+
+            seen_calls: list[tuple[str, dict]] = []
+
+            def fake_execute(connector, connector_payload):
+                seen_calls.append((connector.name, dict(connector_payload)))
+                return {
+                    "connector": connector.name,
+                    "status": "completed",
+                    "summary": f"Executed {connector.name}.",
+                    "artifacts": [],
+                    "next_recommendation": "",
+                }
+
+            with patch("loop_engineering.runtime.execute_connector", side_effect=fake_execute):
+                result = runtime.step()
+
+            self.assertEqual(result.status, "done")
+            self.assertNotEqual(runtime.context.primary_worktree.path, str(git_repo_dir))
+            self.assertEqual([name for name, _ in seen_calls], ["codex_executor", "git"])
+            for _, connector_payload in seen_calls:
+                self.assertEqual(connector_payload["worktree_path"], str(git_repo_dir))
+                self.assertEqual(connector_payload["git_path"], str(git_repo_dir))
+                self.assertEqual(connector_payload["codex_path"], str(git_repo_dir))
 
     def test_runtime_can_resume_existing_durable_state(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
