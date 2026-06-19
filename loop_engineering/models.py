@@ -56,6 +56,7 @@ class TaskRecord:
     updated_at: str = field(default_factory=utc_now)
     attempt_count: int = 0
     retry_count: int = 0
+    repair_count: int = 0
     active_worktrees: list[str] = field(default_factory=list)
     active_subagents: list[str] = field(default_factory=list)
     latest_report: dict[str, Any] = field(default_factory=dict)

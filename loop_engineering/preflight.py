@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .models import ConnectorMeta
+from .platform_policy import evaluate_tool_policy
 from .secret_store import resolve_auth_requirements
 
 
@@ -30,6 +31,7 @@ def preflight_gate(
         auth_resolution[connector.name] = resolution["resolved"]
         for item in resolution["missing"]:
             missing_auth.append({"connector": connector.name, **item})
+    tool_policy = evaluate_tool_policy(selected, environment=environment, policy=policy)
 
     if missing_auth and policy.get("enforce_connector_auth", False):
         return {
@@ -38,6 +40,18 @@ def preflight_gate(
             "contracts": contracts,
             "auth_resolution": auth_resolution,
             "missing_auth": missing_auth,
+            "tool_policy": tool_policy,
+            "failure_type": "auth_error",
+        }
+    if tool_policy["status"] != "passed" and policy.get("enforce_tool_policy", False):
+        return {
+            "status": "blocked",
+            "reason": tool_policy["reason"],
+            "contracts": contracts,
+            "auth_resolution": auth_resolution,
+            "missing_auth": missing_auth,
+            "tool_policy": tool_policy,
+            "failure_type": tool_policy["failure_type"],
         }
     return {
         "status": "passed",
@@ -45,4 +59,6 @@ def preflight_gate(
         "contracts": contracts,
         "auth_resolution": auth_resolution,
         "missing_auth": missing_auth,
+        "tool_policy": tool_policy,
+        "failure_type": None,
     }

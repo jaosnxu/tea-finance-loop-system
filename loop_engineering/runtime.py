@@ -4,7 +4,8 @@ from dataclasses import asdict
 import re
 
 from .connector_runner import execute_connector
-from .failures import BLOCKING_FAILURES, STOP_FAILURES, classify_failure, should_retry
+from .eval_harness import run_eval_cases
+from .failures import BLOCKING_FAILURES, STOP_FAILURES, classify_failure, should_retry, should_self_repair
 from .gates import merge_gate, review_gate, verification_gate
 from .issue_planner import create_issue_backlog
 from .models import RuntimeContext, RuntimeStepResult, utc_now
@@ -49,6 +50,7 @@ class LoopRuntime:
             )
         elif stage == "understanding":
             repository_memory = self.context.repository_memory
+            project_memory_index = repository_memory.get("project_memory_index", {})
             result = RuntimeStepResult(
                 state=stage,
                 summary="Parsed task scope, acceptance, available resources, and repository memory.",
@@ -61,8 +63,19 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_repair_queue_count": len(repository_memory.get("recent_repair_queue", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
+                        "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "current_status": repository_memory.get("current_status", {}),
+                    },
+                    {
+                        "type": "read_project_memory_index",
+                        "root": project_memory_index.get("root"),
+                        "index_path": project_memory_index.get("index_path"),
+                        "status": project_memory_index.get("status"),
+                        "loaded_files": project_memory_index.get("loaded_files", []),
+                        "missing_files": project_memory_index.get("missing_files", []),
+                        "rejected_files": project_memory_index.get("rejected_files", []),
                     },
                 ],
                 artifacts=[
@@ -72,10 +85,21 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_repair_queue_count": len(repository_memory.get("recent_repair_queue", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
+                        "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
                         "recent_failure_count": len(repository_memory.get("recent_failures", [])),
                         "current_status": repository_memory.get("current_status", {}),
+                    },
+                    {
+                        "type": "project_memory_index_context",
+                        "root": project_memory_index.get("root"),
+                        "index_path": project_memory_index.get("index_path"),
+                        "status": project_memory_index.get("status"),
+                        "loaded_files": project_memory_index.get("loaded_files", []),
+                        "missing_files": project_memory_index.get("missing_files", []),
+                        "rejected_files": project_memory_index.get("rejected_files", []),
                     }
                 ],
                 next_state="planning",
@@ -187,7 +211,6 @@ class LoopRuntime:
         self.task_store.append_report(report)
         self._append_repository_action(result)
         self._trace("report_appended", report)
-        self.task_store.write_run_report(record)
         self.context.memory.task_memory.update(
             {
                 "task_id": record.task_id,
@@ -235,6 +258,7 @@ class LoopRuntime:
         if result.next_state == "completed":
             record.status = "completed"
             record.current_stage = "completed"
+            self._finish_active_repair_queue_item("resolved", result.summary)
             if self.memory_store:
                 self.memory_store.add_success(
                     self.context.memory,
@@ -259,6 +283,16 @@ class LoopRuntime:
                     task_id=record.task_id,
                     debt=record.intent_debt,
                 )
+                self.repository_memory_store.enqueue_repair(
+                    task_id=record.task_id,
+                    goal=record.goal,
+                    failure_type=str(record.intent_debt.get("failure_type") or "unknown"),
+                    reason=str(record.intent_debt.get("reason") or "unknown"),
+                    next_step=str(record.intent_debt.get("next_step") or "inspect failure history"),
+                    repair_count=record.repair_count,
+                    retry_count=record.retry_count,
+                )
+            self._finish_active_repair_queue_item("failed", result.summary)
         elif result.next_state == "aborted":
             record.status = "aborted"
             record.current_stage = "aborted"
@@ -266,6 +300,9 @@ class LoopRuntime:
             record.status = "running"
             record.current_stage = result.next_state
         self._write_repository_status(result)
+        self.task_store.write_run_report(record)
+        if self.repository_memory_store:
+            self.repository_memory_store.archive_run_summary(self.task_store.read_run_summary())
 
     def _preflight(self) -> RuntimeStepResult:
         selected_connector_names = self.context.memory.task_memory.get("selected_connectors", [])
@@ -279,8 +316,15 @@ class LoopRuntime:
         artifacts = [
             {"type": "tool_contracts", "value": preflight["contracts"]},
             {"type": "missing_auth", "value": preflight["missing_auth"]},
+            {"type": "tool_policy", "value": preflight.get("tool_policy", {})},
         ]
         if preflight["status"] != "passed":
+            failure_type = preflight.get("failure_type") or "auth_error"
+            self.context.task_record.intent_debt = self._make_intent_debt(
+                failure_type,
+                f"Preflight gate blocked: {preflight['reason']}.",
+            )
+            self._create_approval_requests(preflight)
             return RuntimeStepResult(
                 state="preflight",
                 status="blocked",
@@ -288,7 +332,7 @@ class LoopRuntime:
                 actions=[{"type": "preflight_gate", "reason": preflight["reason"]}],
                 artifacts=artifacts,
                 next_state="blocked",
-                failure_type="auth_error",
+                failure_type=failure_type,
             )
         return RuntimeStepResult(
             state="preflight",
@@ -320,7 +364,7 @@ class LoopRuntime:
         skill_outputs = []
         connector_outputs = []
         for skill in self.context.skills:
-            if skill.name in selected_skill_names[:1]:
+            if skill.name in selected_skill_names:
                 skill_outputs.append(
                     execute_skill(
                         skill,
@@ -358,6 +402,7 @@ class LoopRuntime:
                             "cli_command": self.context.environment.get("cli_command"),
                             "cli_path": self.context.environment.get("cli_path") or self.context.environment.get("source_path", "."),
                             "test_command": self.context.environment.get("test_command"),
+                            "test_setup_command": self.context.environment.get("test_setup_command"),
                             "test_suites": self.context.environment.get("test_suites"),
                             "mcp_command": self.context.environment.get("mcp_command"),
                             "mcp_server_command": self.context.environment.get("mcp_server_command"),
@@ -432,6 +477,20 @@ class LoopRuntime:
         )
 
     def _verify(self) -> RuntimeStepResult:
+        eval_cases = self.context.environment.get("eval_cases") or []
+        if eval_cases:
+            eval_result = run_eval_cases(eval_cases, self.context.task_record.artifacts)
+            self.context.task_record.artifacts.append({"type": "eval_summary", "value": eval_result})
+            self.context.task_record.gate_status["eval_gate"] = eval_result
+            if eval_result["status"] != "passed":
+                return RuntimeStepResult(
+                    state="verifying",
+                    status="failed",
+                    summary="Eval gate failed.",
+                    artifacts=[{"type": "eval_summary", "value": eval_result}],
+                    next_state="repairing",
+                    failure_type="code_error",
+                )
         verification = verification_gate(
             self.context.policy,
             self.context.task_record.acceptance,
@@ -474,6 +533,7 @@ class LoopRuntime:
     def _repair(self) -> RuntimeStepResult:
         record = self.context.task_record
         retry_limit = self.context.policy.get("retry_limit", 3)
+        self_repair_limit = self.context.policy.get("self_repair_limit", 3)
         failure_type = record.failure_history[-1]["failure_type"] if record.failure_history else "unknown"
         if failure_type in STOP_FAILURES:
             record.intent_debt = self._make_intent_debt(failure_type, "stopped for production risk")
@@ -503,7 +563,46 @@ class LoopRuntime:
                 next_state="executing",
                 failure_type=failure_type,
             )
-        record.intent_debt = self._make_intent_debt(failure_type, "retry limit exhausted")
+        if should_self_repair(failure_type, record.repair_count, self_repair_limit):
+            record.repair_count += 1
+            return RuntimeStepResult(
+                state="repairing",
+                status="repairing",
+                summary=(
+                    f"Starting self-repair cycle after {failure_type}; "
+                    f"cycle {record.repair_count} of {self_repair_limit}."
+                ),
+                actions=[
+                    {
+                        "type": "self_repair_cycle",
+                        "failure_type": failure_type,
+                        "repair_count": record.repair_count,
+                        "repair_limit": self_repair_limit,
+                        "next_stage": "planning",
+                    }
+                ],
+                artifacts=[
+                    {
+                        "type": "self_repair_plan",
+                        "value": {
+                            "failure_type": failure_type,
+                            "source_stage": record.failure_history[-1].get("stage"),
+                            "summary": record.failure_history[-1].get("summary"),
+                            "next_stage": "planning",
+                            "required_actions": [
+                                "reuse failure history",
+                                "rebuild issue plan",
+                                "reroute connectors and skills",
+                                "execute verification again",
+                            ],
+                        },
+                    }
+                ],
+                next_state="planning",
+                failure_type=failure_type,
+            )
+        reason = "self-repair limit exhausted" if failure_type == "code_error" else "retry limit exhausted"
+        record.intent_debt = self._make_intent_debt(failure_type, reason)
         return RuntimeStepResult(
             state="repairing",
             status="blocked",
@@ -517,9 +616,42 @@ class LoopRuntime:
             "goal": self.context.task_record.goal,
             "failure_type": failure_type,
             "reason": reason,
-            "next_step": "inspect failure history and unblock required dependency",
+            "next_step": _intent_debt_next_step(failure_type),
             "created_at": utc_now(),
         }
+
+    def _create_approval_requests(self, preflight: dict) -> None:
+        if not self.repository_memory_store:
+            return
+        tool_policy = preflight.get("tool_policy") or {}
+        for decision in tool_policy.get("blocked", []):
+            request = self.repository_memory_store.create_approval_request(
+                task_id=self.context.task_record.task_id,
+                approval_type="tool_policy",
+                subject=str(decision.get("connector") or decision.get("target") or "unknown"),
+                reason=str(decision.get("reason") or preflight.get("reason") or "approval required"),
+                risk_level=str(decision.get("risk_level") or "unknown"),
+            )
+            self.context.task_record.artifacts.append({"type": "approval_request", "value": request})
+
+    def _finish_active_repair_queue_item(self, status: str, summary: str) -> None:
+        if not self.repository_memory_store:
+            return
+        item = self.context.memory.task_memory.get("active_repair_queue_item")
+        if not item:
+            return
+        source_task_id = item.get("source_task_id")
+        if not source_task_id:
+            return
+        finished = self.repository_memory_store.finish_repair_item(
+            source_task_id=str(source_task_id),
+            worker_task_id=self.context.task_record.task_id,
+            status=status,
+            summary=summary,
+        )
+        if finished:
+            self.context.memory.task_memory["active_repair_queue_item"] = finished
+            self.context.task_record.artifacts.append({"type": "repair_queue_finish", "value": finished})
 
     def _heartbeat(self, stage: str) -> None:
         timestamp = utc_now()
@@ -592,13 +724,15 @@ class LoopRuntime:
             [
                 self.context.task_record.goal,
                 " ".join(self.context.task_record.acceptance),
-                " ".join(self.context.task_record.scope.get("exclude", [])),
                 self.context.environment.get("repo", ""),
             ]
         ).lower()
         tokens = set(re.findall(r"[a-z0-9_]+", text))
+        excluded_tokens = _scope_exclusion_tokens(self.context.task_record.scope)
         ranked: list[tuple[int, int, str]] = []
         for skill in self.context.skills:
+            if _skill_is_excluded(skill, excluded_tokens):
+                continue
             score = 0
             if skill.domain and skill.domain.lower() in tokens:
                 score += 5
@@ -612,7 +746,7 @@ class LoopRuntime:
         ranked.sort(reverse=True)
         default_selection = [name for score, _, name in ranked if score > 0][:3]
         if not default_selection:
-            default_selection = [skill.name for skill in self.context.skills[:3]]
+            default_selection = _generic_skill_fallback(self.context.skills)
         discouraged = {
             item["context"].get("skill")
             for item in experience.get("failures", [])
@@ -712,3 +846,46 @@ class LoopRuntime:
         }
         filtered = [name for name in default_selection if name not in discouraged]
         return filtered or default_selection
+
+
+def _intent_debt_next_step(failure_type: str) -> str:
+    if failure_type == "code_error":
+        return "enqueue automated repair: split scope, reroute tools, and restart from planning"
+    if failure_type in {"network_error", "timeout"}:
+        return "enqueue delayed retry with backoff and previous failure history"
+    if failure_type in {"permission_error", "auth_error"}:
+        return "wait for permission or authentication, then resume from repair queue"
+    if failure_type == "configuration_error":
+        return "wait for required configuration, then resume from repair queue"
+    if failure_type == "requirement_ambiguity":
+        return "clarify acceptance criteria, then resume from repair queue"
+    if failure_type == "production_risk":
+        return "require explicit production approval before resuming"
+    return "inspect failure history, choose repair strategy, and resume from repair queue"
+
+
+def _generic_skill_fallback(skills) -> list[str]:
+    generic_domains = {"analysis", "backend", "frontend"}
+    generic_tags = {"prd", "planning", "architecture", "backend", "schema", "frontend", "ui", "page"}
+    generic = [
+        skill
+        for skill in skills
+        if skill.domain in generic_domains or generic_tags.intersection(set(skill.tags))
+    ]
+    if generic:
+        return [skill.name for skill in sorted(generic, key=lambda skill: skill.priority)[:3]]
+    return [skill.name for skill in skills[:3]]
+
+
+def _scope_exclusion_tokens(scope: dict) -> set[str]:
+    return set(re.findall(r"[a-z0-9_]+", " ".join(scope.get("exclude", [])).lower()))
+
+
+def _skill_is_excluded(skill, excluded_tokens: set[str]) -> bool:
+    if skill.domain and skill.domain.lower() in excluded_tokens:
+        return True
+    for tag in skill.tags:
+        tag_tokens = set(re.findall(r"[a-z0-9_]+", tag.lower()))
+        if tag.lower() in excluded_tokens or excluded_tokens.intersection(tag_tokens):
+            return True
+    return False

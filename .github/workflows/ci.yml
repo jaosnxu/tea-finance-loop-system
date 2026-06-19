@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  loop-runtime:
-    name: Loop runtime tests
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,11 +21,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run Loop tests
-        run: python3 -m unittest discover -s tests -v
+      - name: Compile Python sources
+        run: python3 -m compileall loop_engineering scripts tests
 
-  tea-finance:
-    name: Tea finance build and tests
+  typecheck:
+    name: typecheck
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -47,8 +47,88 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
-      - name: Run database tests
+      - name: Run TypeScript typecheck
+        run: npx tsc --noEmit
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Loop runtime tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tea-finance-system/package-lock.json
+
+      - name: Install tea finance dependencies
+        working-directory: tea-finance-system
+        run: npm ci
+
+      - name: Generate tea finance Prisma client
+        working-directory: tea-finance-system
+        run: npx prisma generate
+
+      - name: Run tea finance database tests
+        working-directory: tea-finance-system
         run: npm run test:db
+
+  build-smoke:
+    name: build-smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tea-finance-system
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tea-finance-system/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
 
       - name: Build application
         run: npm run build
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tea-finance-system
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tea-finance-system/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit high severity vulnerabilities
+        run: npm audit --audit-level=high

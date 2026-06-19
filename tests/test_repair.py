@@ -1,5 +1,6 @@
 import unittest
 
+from loop_engineering.failures import should_retry, should_self_repair
 from safe_loop.repair import choose_recovery_action, classify_failure
 
 
@@ -18,6 +19,13 @@ class RepairTests(unittest.TestCase):
     def test_stop_policy_after_limit(self) -> None:
         action = choose_recovery_action("task_failure", 3, 3)
         self.assertEqual(action, "stop")
+
+    def test_loop_failure_policy_separates_retry_from_self_repair(self) -> None:
+        self.assertTrue(should_retry("network_error", 0, 3))
+        self.assertFalse(should_retry("code_error", 0, 3))
+        self.assertTrue(should_self_repair("code_error", 0, 3))
+        self.assertFalse(should_self_repair("permission_error", 0, 3))
+        self.assertFalse(should_self_repair("code_error", 3, 3))
 
 
 if __name__ == "__main__":

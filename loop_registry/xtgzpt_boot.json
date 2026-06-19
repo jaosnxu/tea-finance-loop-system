@@ -1,0 +1,120 @@
+{
+  "task_id": "TASK-XTGZPT-LOOP-BOOT",
+  "goal": "Run the xtgzpt collaborative work platform through Loop: read project memory, audit current implementation, execute local gates, record gaps, and produce the next project execution state without bypassing Loop.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance-specific assumptions",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Loop loads xtgzpt docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop records all stages, heartbeat, trace, run report, and run summary outside chat memory.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "Loop selects generic planning/backend/frontend skills and does not fall back to finance skills for xtgzpt.",
+    "Loop inspects xtgzpt git status before execution.",
+    "Loop runs xtgzpt npm gates in an isolated worktree: lint, typecheck, test, build, and smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 3,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "filesystem",
+      "git",
+      "cli",
+      "test",
+      "browser"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "browser_target": "http://127.0.0.1:3001",
+    "ui_acceptance_paths": [
+      "/login",
+      "/dashboard",
+      "/projects",
+      "/tasks",
+      "/settings"
+    ],
+    "git_command": [
+      "git",
+      "status",
+      "--short",
+      "--branch"
+    ],
+    "git_base_ref": "origin/main",
+    "cli_command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": ["npm", "run", "lint"],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": ["npm", "run", "typecheck"],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": ["npm", "run", "test"],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": ["npm", "run", "build"],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": ["npm", "run", "smoke:api"],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 900,
+    "product_design_brief": "xtgzpt collaborative work platform management backend. Use the project memory index as the product source of truth."
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": true,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "agent_roles": {
+      "writer": "writer",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}

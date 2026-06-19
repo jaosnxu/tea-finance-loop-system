@@ -55,6 +55,7 @@
 - [VERIFICATION_GATE.md](/Users/jason/Documents/Codex/2026-06-13-new-chat/VERIFICATION_GATE.md)
 - [CI_AND_RELEASE_POLICY.md](/Users/jason/Documents/Codex/2026-06-13-new-chat/CI_AND_RELEASE_POLICY.md)
 - [SMOKE_TEST_POLICY.md](/Users/jason/Documents/Codex/2026-06-13-new-chat/SMOKE_TEST_POLICY.md)
+- [MERGE_QUEUE_RUNNER.md](/Users/jason/Documents/Codex/2026-06-13-new-chat/MERGE_QUEUE_RUNNER.md)
 
 ## 7. 说明
 

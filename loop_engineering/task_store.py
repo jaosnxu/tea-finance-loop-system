@@ -5,7 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .models import TaskRecord
-from .observability import build_run_report
+from .observability import build_run_report, build_run_summary
 
 
 class TaskStore:
@@ -16,6 +16,7 @@ class TaskStore:
         self.reports_path = self.root / "reports.jsonl"
         self.trace_path = self.root / "trace.jsonl"
         self.run_report_path = self.root / "run_report.json"
+        self.run_summary_path = self.root / "run_summary.json"
 
     def save(self, record: TaskRecord) -> None:
         self.path.write_text(json.dumps(asdict(record), indent=2, ensure_ascii=True), encoding="utf-8")
@@ -46,13 +47,22 @@ class TaskStore:
         return self._read_jsonl(self.trace_path)
 
     def write_run_report(self, record: TaskRecord) -> dict:
+        reports = self.read_reports()
+        trace_count = len(self.read_trace())
         report = build_run_report(
             record,
-            reports_count=len(self.read_reports()),
-            trace_count=len(self.read_trace()),
+            reports_count=len(reports),
+            trace_count=trace_count,
         )
         self.run_report_path.write_text(json.dumps(report, indent=2, ensure_ascii=True), encoding="utf-8")
+        summary = build_run_summary(record, reports=reports, trace_count=trace_count)
+        self.run_summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
         return report
+
+    def read_run_summary(self) -> dict:
+        if not self.run_summary_path.exists():
+            return {}
+        return json.loads(self.run_summary_path.read_text(encoding="utf-8"))
 
     def _read_jsonl(self, path: Path) -> list[dict]:
         if not path.exists():

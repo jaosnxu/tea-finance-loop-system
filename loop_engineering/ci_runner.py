@@ -4,12 +4,15 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from .command_resolution import environment_for_command, resolve_command_executable
+
 
 def run_ci_suite(
     suites: list[dict[str, Any]],
     default_command: list[str] | None,
     cwd: str,
     timeout_seconds: int = 60,
+    setup_command: list[str] | None = None,
 ) -> dict[str, Any]:
     normalized = _normalize_suites(suites, default_command)
     if not normalized:
@@ -20,46 +23,44 @@ def run_ci_suite(
             "failure_type": "configuration_error",
         }
 
+    setup_result = None
+    if setup_command:
+        setup_result = _run_ci_command("setup", setup_command, cwd, timeout_seconds)
+        if setup_result["status"] != "passed":
+            return {
+                "status": "failed",
+                "summary": "CI setup failed.",
+                "artifacts": [
+                    {"type": "ci_setup_result", "value": setup_result},
+                    {
+                        "type": "ci_suite_summary",
+                        "value": {
+                            "total": 0,
+                            "passed": 0,
+                            "failed": 0,
+                            "stopped_on_first_failure": True,
+                        },
+                    },
+                    {"type": "ci_suite_results", "value": []},
+                ],
+                "failure_type": setup_result.get("failure_type") or "code_error",
+            }
+
     results = []
     for suite in normalized:
-        command = [str(item) for item in suite["command"]]
         suite_cwd = str(suite.get("cwd") or cwd)
         suite_timeout = int(suite.get("timeout_seconds") or timeout_seconds)
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=suite_cwd,
-                capture_output=True,
-                text=True,
-                timeout=suite_timeout,
-                check=False,
-            )
-            result = {
-                "name": suite["name"],
-                "command": command,
-                "cwd": suite_cwd,
-                "exit_code": completed.returncode,
-                "stdout": (completed.stdout or "").strip(),
-                "stderr": (completed.stderr or "").strip(),
-                "status": "passed" if completed.returncode == 0 else "failed",
-            }
-        except FileNotFoundError as exc:
-            result = _suite_failed(suite, command, suite_cwd, "configuration_error", str(exc))
-        except subprocess.TimeoutExpired as exc:
-            result = _suite_failed(
-                suite,
-                command,
-                suite_cwd,
-                "timeout",
-                (exc.stderr or exc.stdout or str(exc)).strip(),
-            )
+        result = _run_ci_command(suite["name"], suite["command"], suite_cwd, suite_timeout)
         results.append(result)
         if result["status"] != "passed":
             break
 
     passed = [item for item in results if item["status"] == "passed"]
     failed = [item for item in results if item["status"] != "passed"]
-    artifacts = [
+    artifacts = []
+    if setup_result:
+        artifacts.append({"type": "ci_setup_result", "value": setup_result})
+    artifacts.extend([
         {
             "type": "ci_suite_summary",
             "value": {
@@ -70,7 +71,7 @@ def run_ci_suite(
             },
         },
         {"type": "ci_suite_results", "value": results},
-    ]
+    ])
     if failed:
         failure = failed[0]
         return {
@@ -121,3 +122,36 @@ def _suite_failed(
         "status": "failed",
         "failure_type": failure_type,
     }
+
+
+def _run_ci_command(name: str, command: list[str], cwd: str, timeout_seconds: int) -> dict[str, Any]:
+    resolved_command = resolve_command_executable([str(item) for item in command])
+    try:
+        completed = subprocess.run(
+            resolved_command,
+            cwd=str(cwd),
+            env=environment_for_command(resolved_command),
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+        return {
+            "name": name,
+            "command": resolved_command,
+            "cwd": str(Path(cwd)),
+            "exit_code": completed.returncode,
+            "stdout": (completed.stdout or "").strip(),
+            "stderr": (completed.stderr or "").strip(),
+            "status": "passed" if completed.returncode == 0 else "failed",
+        }
+    except FileNotFoundError as exc:
+        return _suite_failed({"name": name}, resolved_command, cwd, "configuration_error", str(exc))
+    except subprocess.TimeoutExpired as exc:
+        return _suite_failed(
+            {"name": name},
+            resolved_command,
+            cwd,
+            "timeout",
+            (exc.stderr or exc.stdout or str(exc)).strip(),
+        )
