@@ -164,6 +164,89 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.status, "blocked")
             self.assertIsNotNone(runtime.context.task_record.intent_debt)
 
+    def test_code_failure_enters_self_repair_cycle_then_completes(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-CODE-SELF-REPAIR",
+                goal="Self repair after code failure.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Reach completed state after repair."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "simulation": {"failure_type": "code_error"},
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "self_repair_limit": 2,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "code-self-repair-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            for _ in range(16):
+                runtime.step()
+                if runtime.context.task_record.repair_count >= 1 and runtime.context.task_record.current_stage == "planning":
+                    runtime.context.environment["simulation"] = {}
+                if runtime.context.task_record.status in {"completed", "blocked", "aborted"}:
+                    break
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            self.assertEqual(runtime.context.task_record.status, "completed")
+            self.assertEqual(runtime.context.task_record.repair_count, 1)
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+            self.assertIn("self_repair_plan", artifact_types)
+            run_summary = json.loads((Path(records_dir) / payload.task_id / "run_summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(run_summary["repair_count"], 1)
+
+    def test_code_failure_blocks_after_self_repair_limit(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-CODE-SELF-REPAIR-LIMIT",
+                goal="Stop after self repair budget is exhausted.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Block after repair limit."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "simulation": {"failure_type": "code_error"},
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "self_repair_limit": 1,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "code-self-repair-limit-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=16)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(runtime.context.task_record.repair_count, 1)
+            self.assertIsNotNone(runtime.context.task_record.intent_debt)
+            self.assertEqual(runtime.context.task_record.intent_debt["reason"], "self-repair limit exhausted")
+
     def test_runtime_executes_git_cli_test_and_mcp_connectors(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:

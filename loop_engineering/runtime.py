@@ -4,7 +4,7 @@ from dataclasses import asdict
 import re
 
 from .connector_runner import execute_connector
-from .failures import BLOCKING_FAILURES, STOP_FAILURES, classify_failure, should_retry
+from .failures import BLOCKING_FAILURES, STOP_FAILURES, classify_failure, should_retry, should_self_repair
 from .gates import merge_gate, review_gate, verification_gate
 from .issue_planner import create_issue_backlog
 from .models import RuntimeContext, RuntimeStepResult, utc_now
@@ -498,6 +498,7 @@ class LoopRuntime:
     def _repair(self) -> RuntimeStepResult:
         record = self.context.task_record
         retry_limit = self.context.policy.get("retry_limit", 3)
+        self_repair_limit = self.context.policy.get("self_repair_limit", 3)
         failure_type = record.failure_history[-1]["failure_type"] if record.failure_history else "unknown"
         if failure_type in STOP_FAILURES:
             record.intent_debt = self._make_intent_debt(failure_type, "stopped for production risk")
@@ -527,7 +528,46 @@ class LoopRuntime:
                 next_state="executing",
                 failure_type=failure_type,
             )
-        record.intent_debt = self._make_intent_debt(failure_type, "retry limit exhausted")
+        if should_self_repair(failure_type, record.repair_count, self_repair_limit):
+            record.repair_count += 1
+            return RuntimeStepResult(
+                state="repairing",
+                status="repairing",
+                summary=(
+                    f"Starting self-repair cycle after {failure_type}; "
+                    f"cycle {record.repair_count} of {self_repair_limit}."
+                ),
+                actions=[
+                    {
+                        "type": "self_repair_cycle",
+                        "failure_type": failure_type,
+                        "repair_count": record.repair_count,
+                        "repair_limit": self_repair_limit,
+                        "next_stage": "planning",
+                    }
+                ],
+                artifacts=[
+                    {
+                        "type": "self_repair_plan",
+                        "value": {
+                            "failure_type": failure_type,
+                            "source_stage": record.failure_history[-1].get("stage"),
+                            "summary": record.failure_history[-1].get("summary"),
+                            "next_stage": "planning",
+                            "required_actions": [
+                                "reuse failure history",
+                                "rebuild issue plan",
+                                "reroute connectors and skills",
+                                "execute verification again",
+                            ],
+                        },
+                    }
+                ],
+                next_state="planning",
+                failure_type=failure_type,
+            )
+        reason = "self-repair limit exhausted" if failure_type == "code_error" else "retry limit exhausted"
+        record.intent_debt = self._make_intent_debt(failure_type, reason)
         return RuntimeStepResult(
             state="repairing",
             status="blocked",
