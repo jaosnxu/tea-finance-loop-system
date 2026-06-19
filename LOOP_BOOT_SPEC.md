@@ -84,7 +84,26 @@ memory:
 7. 把 goal 交给 runtime
 8. 进入第一轮 `intake`
 
-## 5. 启动失败
+## 5. 标准运行记录
+
+每次 Loop 运行必须写外部记录，不能依赖对话记忆。
+
+标准文件包括：
+
+- `task_record.json`：完整任务状态
+- `reports.jsonl`：每个阶段的短报告
+- `trace.jsonl`：每个阶段的运行事件
+- `run_report.json`：机器可读的运行摘要
+- `run_summary.json`：复盘和经验回用摘要
+
+如果启动包配置了 repository memory，Loop 还必须把 `run_summary` 归档到：
+
+- `memory/runs/<task_id>.json`
+- `memory/run_history.jsonl`
+
+`run_summary` 至少包含目标、范围、验收标准、读取的项目 memory index、阶段状态、gate 状态、失败记录、intent debt、验证结果和下一步建议。
+
+## 6. 启动失败
 
 以下情况不应启动：
 
@@ -94,6 +113,6 @@ memory:
 - 环境无法访问
 - 关键 connector 不可用
 
-## 6. 当前结论
+## 7. 当前结论
 
 **Loop Boot Spec 定义的是“如何合法启动一次 Loop 任务”。**

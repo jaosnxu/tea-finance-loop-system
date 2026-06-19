@@ -86,6 +86,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "regression_candidates.jsonl").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "run_history.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "current_status.json").exists())
             self.assertIn("project_standards.md", snapshot["files"])
             self.assertIn("verification/regression_policy.md", snapshot["files"])
@@ -129,9 +130,12 @@ class RepositoryMemoryTests(unittest.TestCase):
             success_log = Path(repo_dir) / "memory" / "experience" / "successes.jsonl"
             status_file = Path(repo_dir) / "memory" / "current_status.json"
             run_file = Path(repo_dir) / "memory" / "runs" / f"{payload.task_id}.json"
+            run_history_file = Path(repo_dir) / "memory" / "run_history.jsonl"
             rows = [json.loads(line) for line in action_log.read_text(encoding="utf-8").splitlines()]
             successes = [json.loads(line) for line in success_log.read_text(encoding="utf-8").splitlines()]
             status = json.loads(status_file.read_text(encoding="utf-8"))
+            run_summary = json.loads(run_file.read_text(encoding="utf-8"))
+            run_history = [json.loads(line) for line in run_history_file.read_text(encoding="utf-8").splitlines()]
             artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
 
             self.assertGreaterEqual(len(rows), 1)
@@ -142,6 +146,9 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertEqual(status["active_task_id"], payload.task_id)
             self.assertEqual(status["status"], "completed")
             self.assertTrue(run_file.exists())
+            self.assertEqual(run_summary["schema_version"], "loop.run_summary.v1")
+            self.assertEqual(run_summary["status"], "completed")
+            self.assertEqual(run_history[-1]["task_id"], payload.task_id)
             self.assertTrue(RepositoryMemory(Path(repo_dir) / "memory").search_actions(task_id=payload.task_id))
 
     def test_runtime_loads_project_memory_index_from_target_repository(self) -> None:

@@ -63,6 +63,7 @@ class LoopRuntime:
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
+                        "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "current_status": repository_memory.get("current_status", {}),
                     },
                     {
@@ -83,6 +84,7 @@ class LoopRuntime:
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
+                        "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
                         "recent_failure_count": len(repository_memory.get("recent_failures", [])),
                         "current_status": repository_memory.get("current_status", {}),
@@ -206,7 +208,6 @@ class LoopRuntime:
         self.task_store.append_report(report)
         self._append_repository_action(result)
         self._trace("report_appended", report)
-        self.task_store.write_run_report(record)
         self.context.memory.task_memory.update(
             {
                 "task_id": record.task_id,
@@ -285,6 +286,9 @@ class LoopRuntime:
             record.status = "running"
             record.current_stage = result.next_state
         self._write_repository_status(result)
+        self.task_store.write_run_report(record)
+        if self.repository_memory_store:
+            self.repository_memory_store.archive_run_summary(self.task_store.read_run_summary())
 
     def _preflight(self) -> RuntimeStepResult:
         selected_connector_names = self.context.memory.task_memory.get("selected_connectors", [])
