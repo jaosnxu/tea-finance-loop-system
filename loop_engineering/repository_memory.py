@@ -15,6 +15,7 @@ This directory is the durable memory spine for Loop Engineering.
 Rules:
 - Read this directory before planning or execution.
 - Record every Loop stage result in `action_log.jsonl`.
+- Persist repair queue state in `repair_queue.jsonl` with `open`, `claimed`, `resolved`, and `failed` rows.
 - Keep project status, standards, decisions, integrations, and open questions current.
 - Store reusable experience in `experience/successes.jsonl` and `experience/failures.jsonl`.
 """,
@@ -44,6 +45,7 @@ Loop standards:
 - Each step has status, heartbeat, timeout, retry policy, review, and verification.
 - Network failures can retry automatically.
 - Code failures enter self-repair cycles before intent debt.
+- Exhausted self-repair creates repair queue items for future automatic resume.
 - Auth, permission, production config, or unclear requirement failures become blocked intent debt.
 - Writer, reviewer, and verifier gates must remain separate in records.
 - Every action must be written outside conversation memory.
@@ -138,6 +140,7 @@ class RepositoryMemory:
         self.root = Path(root)
         self.action_log_path = self.root / "action_log.jsonl"
         self.intent_debt_path = self.root / "intent_debt.jsonl"
+        self.repair_queue_path = self.root / "repair_queue.jsonl"
         self.regression_candidate_path = self.root / "regression_candidates.jsonl"
         self.current_status_path = self.root / "current_status.json"
         self.run_history_path = self.root / "run_history.jsonl"
@@ -159,6 +162,7 @@ class RepositoryMemory:
         for path in [
             self.action_log_path,
             self.intent_debt_path,
+            self.repair_queue_path,
             self.regression_candidate_path,
             self.run_history_path,
             self.success_log_path,
@@ -195,6 +199,13 @@ class RepositoryMemory:
             "files": files,
             "recent_actions": self._read_jsonl_tail(self.action_log_path, recent_actions),
             "recent_intent_debt": self._read_jsonl_tail(self.intent_debt_path, recent_actions),
+            "recent_repair_queue": self._read_jsonl_tail(self.repair_queue_path, recent_actions),
+            "open_repair_queue": self.list_repair_items(status="open", limit=recent_actions),
+            "claimable_repair_queue": self.list_repair_items(
+                status="open",
+                queue_classes={"automated_repair", "delayed_retry"},
+                limit=recent_actions,
+            ),
             "recent_regression_candidates": self._read_jsonl_tail(self.regression_candidate_path, recent_actions),
             "recent_run_summaries": self._read_jsonl_tail(self.run_history_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
@@ -310,6 +321,109 @@ class RepositoryMemory:
             },
         )
 
+    def enqueue_repair(
+        self,
+        *,
+        task_id: str,
+        goal: str,
+        failure_type: str,
+        reason: str,
+        next_step: str,
+        repair_count: int,
+        retry_count: int,
+    ) -> None:
+        self.initialize()
+        if self._repair_queue_contains(task_id):
+            return
+        self._append_jsonl(
+            self.repair_queue_path,
+            {
+                "timestamp": utc_now(),
+                "source_task_id": task_id,
+                "queue_item_id": task_id,
+                "goal": goal,
+                "status": "open",
+                "failure_type": failure_type,
+                "reason": reason,
+                "repair_count": repair_count,
+                "retry_count": retry_count,
+                "queue_class": _queue_class(failure_type),
+                "resume_strategy": _resume_strategy(failure_type),
+                "next_step": next_step,
+            },
+        )
+
+    def list_repair_items(
+        self,
+        *,
+        status: str | None = None,
+        queue_classes: set[str] | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        self.initialize()
+        rows = self._read_jsonl_tail(self.repair_queue_path, 10000)
+        latest_by_source: dict[str, dict[str, Any]] = {}
+        order: list[str] = []
+        for row in rows:
+            source_task_id = str(row.get("source_task_id") or row.get("queue_item_id") or "")
+            if not source_task_id:
+                continue
+            if source_task_id not in latest_by_source:
+                order.append(source_task_id)
+            latest_by_source[source_task_id] = row
+        items = [latest_by_source[source_task_id] for source_task_id in order if source_task_id in latest_by_source]
+        if status is not None:
+            items = [item for item in items if item.get("status") == status]
+        if queue_classes is not None:
+            items = [item for item in items if item.get("queue_class") in queue_classes]
+        return items[-limit:]
+
+    def next_claimable_repair_item(self) -> dict[str, Any] | None:
+        items = self.list_repair_items(
+            status="open",
+            queue_classes={"automated_repair", "delayed_retry"},
+            limit=1,
+        )
+        return items[0] if items else None
+
+    def claim_repair_item(self, *, source_task_id: str, worker_task_id: str) -> dict[str, Any] | None:
+        self.initialize()
+        item = self._latest_repair_queue_item(source_task_id)
+        if not item or item.get("status") != "open":
+            return None
+        claimed = {
+            **item,
+            "timestamp": utc_now(),
+            "status": "claimed",
+            "claimed_by_task_id": worker_task_id,
+        }
+        self._append_jsonl(self.repair_queue_path, claimed)
+        return claimed
+
+    def finish_repair_item(
+        self,
+        *,
+        source_task_id: str,
+        worker_task_id: str,
+        status: str,
+        summary: str,
+    ) -> dict[str, Any] | None:
+        if status not in {"resolved", "failed"}:
+            raise ValueError("repair item status must be resolved or failed")
+        self.initialize()
+        item = self._latest_repair_queue_item(source_task_id)
+        if not item:
+            return None
+        finished = {
+            **item,
+            "timestamp": utc_now(),
+            "status": status,
+            "finished_by_task_id": worker_task_id,
+            "finish_summary": summary,
+        }
+        self._append_jsonl(self.repair_queue_path, finished)
+        return finished
+
     def append_regression_candidate(
         self,
         *,
@@ -374,3 +488,43 @@ class RepositoryMemory:
     def _run_history_contains(self, task_id: str) -> bool:
         rows = self._read_jsonl_tail(self.run_history_path, 10000)
         return any(row.get("task_id") == task_id for row in rows)
+
+    def _repair_queue_contains(self, task_id: str) -> bool:
+        rows = self._read_jsonl_tail(self.repair_queue_path, 10000)
+        return any(row.get("source_task_id") == task_id for row in rows)
+
+    def _latest_repair_queue_item(self, source_task_id: str) -> dict[str, Any] | None:
+        rows = self._read_jsonl_tail(self.repair_queue_path, 10000)
+        latest = None
+        for row in rows:
+            if row.get("source_task_id") == source_task_id:
+                latest = row
+        return latest
+
+
+def _queue_class(failure_type: str) -> str:
+    if failure_type == "code_error":
+        return "automated_repair"
+    if failure_type in {"network_error", "timeout"}:
+        return "delayed_retry"
+    if failure_type == "production_risk":
+        return "approval_required"
+    if failure_type in {"permission_error", "auth_error", "configuration_error", "requirement_ambiguity"}:
+        return "human_blocked"
+    return "needs_triage"
+
+
+def _resume_strategy(failure_type: str) -> str:
+    if failure_type == "code_error":
+        return "split_scope_reroute_tools_and_restart_from_planning"
+    if failure_type in {"network_error", "timeout"}:
+        return "resume_after_backoff_with_previous_failure_history"
+    if failure_type in {"permission_error", "auth_error"}:
+        return "resume_after_permission_or_auth_is_restored"
+    if failure_type == "configuration_error":
+        return "resume_after_required_configuration_is_available"
+    if failure_type == "requirement_ambiguity":
+        return "resume_after_acceptance_scope_is_clarified"
+    if failure_type == "production_risk":
+        return "resume_only_after_explicit_production_approval"
+    return "inspect_failure_history_then_restart_from_planning"

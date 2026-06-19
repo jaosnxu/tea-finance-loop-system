@@ -85,6 +85,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue((Path(root_dir) / "memory" / "projects" / "tea-finance-system.md").exists())
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "repair_queue.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "regression_candidates.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "run_history.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "current_status.json").exists())
@@ -254,6 +255,215 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertEqual(regression_candidates[-1]["failure_type"], "permission_error")
             self.assertEqual(status["status"], "blocked")
             self.assertIsNotNone(status["intent_debt"])
+
+    def test_exhausted_self_repair_enters_repository_repair_queue(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-REPAIR-QUEUE",
+                goal="Queue exhausted code repair.",
+                scope={"include": [str(repo_dir)]},
+                acceptance=["Queue repair after code failure budget is exhausted."],
+                environment={
+                    "source_path": str(repo_dir),
+                    "repository_root": str(repo_dir),
+                    "repository_memory_path": "memory",
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "simulation": {"failure_type": "code_error"},
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "self_repair_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "repair-queue-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=8)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            repair_queue_path = Path(repo_dir) / "memory" / "repair_queue.jsonl"
+            queue_rows = [json.loads(line) for line in repair_queue_path.read_text(encoding="utf-8").splitlines()]
+            summary = json.loads((Path(records_dir) / payload.task_id / "run_summary.json").read_text(encoding="utf-8"))
+            repository_snapshot = RepositoryMemory(Path(repo_dir) / "memory").read_required_context()
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(queue_rows[-1]["source_task_id"], payload.task_id)
+            self.assertEqual(queue_rows[-1]["queue_class"], "automated_repair")
+            self.assertEqual(queue_rows[-1]["resume_strategy"], "split_scope_reroute_tools_and_restart_from_planning")
+            self.assertTrue(summary["repair_queue"]["queued"])
+            self.assertEqual(repository_snapshot["recent_repair_queue"][-1]["source_task_id"], payload.task_id)
+
+    def test_preflight_auth_block_enters_repository_repair_queue(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-AUTH-REPAIR-QUEUE",
+                goal="Queue missing auth preflight blocker.",
+                scope={"include": [str(repo_dir)]},
+                acceptance=["Queue auth blockers after preflight failure."],
+                environment={
+                    "source_path": str(repo_dir),
+                    "repository_root": str(repo_dir),
+                    "repository_memory_path": "memory",
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["github"],
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "enforce_connector_auth": True,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "auth-queue-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=8)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            intent_debt_path = Path(repo_dir) / "memory" / "intent_debt.jsonl"
+            repair_queue_path = Path(repo_dir) / "memory" / "repair_queue.jsonl"
+            debt_rows = [json.loads(line) for line in intent_debt_path.read_text(encoding="utf-8").splitlines()]
+            queue_rows = [json.loads(line) for line in repair_queue_path.read_text(encoding="utf-8").splitlines()]
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(debt_rows[-1]["debt"]["failure_type"], "auth_error")
+            self.assertEqual(queue_rows[-1]["source_task_id"], payload.task_id)
+            self.assertEqual(queue_rows[-1]["queue_class"], "human_blocked")
+            self.assertEqual(queue_rows[-1]["resume_strategy"], "resume_after_permission_or_auth_is_restored")
+
+    def test_repair_queue_classifies_delayed_retry_and_production_approval(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.initialize()
+            memory.enqueue_repair(
+                task_id="TASK-NETWORK",
+                goal="Retry transient network failure.",
+                failure_type="network_error",
+                reason="network exhausted retries",
+                next_step="enqueue delayed retry with backoff and previous failure history",
+                repair_count=0,
+                retry_count=3,
+            )
+            memory.enqueue_repair(
+                task_id="TASK-PRODUCTION",
+                goal="Block production risk.",
+                failure_type="production_risk",
+                reason="production approval missing",
+                next_step="require explicit production approval before resuming",
+                repair_count=0,
+                retry_count=0,
+            )
+            queue_rows = [
+                json.loads(line)
+                for line in (Path(repo_dir) / "memory" / "repair_queue.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+
+            self.assertEqual(queue_rows[0]["queue_class"], "delayed_retry")
+            self.assertEqual(queue_rows[0]["resume_strategy"], "resume_after_backoff_with_previous_failure_history")
+            self.assertEqual(queue_rows[1]["queue_class"], "approval_required")
+            self.assertEqual(queue_rows[1]["resume_strategy"], "resume_only_after_explicit_production_approval")
+
+    def test_repair_queue_can_be_claimed_and_finished(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.initialize()
+            memory.enqueue_repair(
+                task_id="TASK-OLD",
+                goal="Repair old task.",
+                failure_type="code_error",
+                reason="self-repair exhausted",
+                next_step="split scope and restart",
+                repair_count=3,
+                retry_count=0,
+            )
+
+            claimed = memory.claim_repair_item(source_task_id="TASK-OLD", worker_task_id="TASK-WORKER")
+            open_items = memory.list_repair_items(status="open")
+            claimed_items = memory.list_repair_items(status="claimed")
+            finished = memory.finish_repair_item(
+                source_task_id="TASK-OLD",
+                worker_task_id="TASK-WORKER",
+                status="resolved",
+                summary="Worker completed repair.",
+            )
+            resolved_items = memory.list_repair_items(status="resolved")
+
+            self.assertIsNotNone(claimed)
+            self.assertEqual(open_items, [])
+            self.assertEqual(claimed_items[-1]["claimed_by_task_id"], "TASK-WORKER")
+            self.assertIsNotNone(finished)
+            self.assertEqual(resolved_items[-1]["source_task_id"], "TASK-OLD")
+            self.assertEqual(resolved_items[-1]["finished_by_task_id"], "TASK-WORKER")
+
+    def test_boot_auto_resumes_claimable_repair_queue_item(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.initialize()
+            memory.enqueue_repair(
+                task_id="TASK-OLD-CODE-FAILURE",
+                goal="Repair old code failure.",
+                failure_type="code_error",
+                reason="self-repair exhausted",
+                next_step="split scope and restart",
+                repair_count=3,
+                retry_count=0,
+            )
+            payload = BootPayload(
+                task_id="TASK-QUEUE-WORKER",
+                goal="Resume repair queue.",
+                scope={"include": [str(repo_dir)]},
+                acceptance=["Claim and resolve a repair queue item."],
+                environment={
+                    "source_path": str(repo_dir),
+                    "repository_root": str(repo_dir),
+                    "repository_memory_path": "memory",
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "auto_resume_repair_queue": True,
+                    "retry_limit": 1,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "repair-queue-resume-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=8)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            resolved_items = RepositoryMemory(Path(repo_dir) / "memory").list_repair_items(status="resolved")
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+
+            self.assertEqual(runtime.context.task_record.status, "completed")
+            self.assertEqual(resolved_items[-1]["source_task_id"], "TASK-OLD-CODE-FAILURE")
+            self.assertEqual(resolved_items[-1]["finished_by_task_id"], payload.task_id)
+            self.assertIn("repair_queue_resume", artifact_types)
+            self.assertIn("repair_queue_finish", artifact_types)
 
     def test_cli_prints_repository_memory_report(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

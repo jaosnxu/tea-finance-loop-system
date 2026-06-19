@@ -62,6 +62,7 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_repair_queue_count": len(repository_memory.get("recent_repair_queue", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
                         "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "current_status": repository_memory.get("current_status", {}),
@@ -83,6 +84,7 @@ class LoopRuntime:
                         "loaded_files": sorted(repository_memory.get("files", {}).keys()),
                         "recent_action_count": len(repository_memory.get("recent_actions", [])),
                         "recent_intent_debt_count": len(repository_memory.get("recent_intent_debt", [])),
+                        "recent_repair_queue_count": len(repository_memory.get("recent_repair_queue", [])),
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
                         "recent_run_summary_count": len(repository_memory.get("recent_run_summaries", [])),
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
@@ -255,6 +257,7 @@ class LoopRuntime:
         if result.next_state == "completed":
             record.status = "completed"
             record.current_stage = "completed"
+            self._finish_active_repair_queue_item("resolved", result.summary)
             if self.memory_store:
                 self.memory_store.add_success(
                     self.context.memory,
@@ -279,6 +282,16 @@ class LoopRuntime:
                     task_id=record.task_id,
                     debt=record.intent_debt,
                 )
+                self.repository_memory_store.enqueue_repair(
+                    task_id=record.task_id,
+                    goal=record.goal,
+                    failure_type=str(record.intent_debt.get("failure_type") or "unknown"),
+                    reason=str(record.intent_debt.get("reason") or "unknown"),
+                    next_step=str(record.intent_debt.get("next_step") or "inspect failure history"),
+                    repair_count=record.repair_count,
+                    retry_count=record.retry_count,
+                )
+            self._finish_active_repair_queue_item("failed", result.summary)
         elif result.next_state == "aborted":
             record.status = "aborted"
             record.current_stage = "aborted"
@@ -304,6 +317,10 @@ class LoopRuntime:
             {"type": "missing_auth", "value": preflight["missing_auth"]},
         ]
         if preflight["status"] != "passed":
+            self.context.task_record.intent_debt = self._make_intent_debt(
+                "auth_error",
+                f"Preflight gate blocked: {preflight['reason']}.",
+            )
             return RuntimeStepResult(
                 state="preflight",
                 status="blocked",
@@ -581,9 +598,28 @@ class LoopRuntime:
             "goal": self.context.task_record.goal,
             "failure_type": failure_type,
             "reason": reason,
-            "next_step": "inspect failure history and unblock required dependency",
+            "next_step": _intent_debt_next_step(failure_type),
             "created_at": utc_now(),
         }
+
+    def _finish_active_repair_queue_item(self, status: str, summary: str) -> None:
+        if not self.repository_memory_store:
+            return
+        item = self.context.memory.task_memory.get("active_repair_queue_item")
+        if not item:
+            return
+        source_task_id = item.get("source_task_id")
+        if not source_task_id:
+            return
+        finished = self.repository_memory_store.finish_repair_item(
+            source_task_id=str(source_task_id),
+            worker_task_id=self.context.task_record.task_id,
+            status=status,
+            summary=summary,
+        )
+        if finished:
+            self.context.memory.task_memory["active_repair_queue_item"] = finished
+            self.context.task_record.artifacts.append({"type": "repair_queue_finish", "value": finished})
 
     def _heartbeat(self, stage: str) -> None:
         timestamp = utc_now()
@@ -776,3 +812,19 @@ class LoopRuntime:
         }
         filtered = [name for name in default_selection if name not in discouraged]
         return filtered or default_selection
+
+
+def _intent_debt_next_step(failure_type: str) -> str:
+    if failure_type == "code_error":
+        return "enqueue automated repair: split scope, reroute tools, and restart from planning"
+    if failure_type in {"network_error", "timeout"}:
+        return "enqueue delayed retry with backoff and previous failure history"
+    if failure_type in {"permission_error", "auth_error"}:
+        return "wait for permission or authentication, then resume from repair queue"
+    if failure_type == "configuration_error":
+        return "wait for required configuration, then resume from repair queue"
+    if failure_type == "requirement_ambiguity":
+        return "clarify acceptance criteria, then resume from repair queue"
+    if failure_type == "production_risk":
+        return "require explicit production approval before resuming"
+    return "inspect failure history, choose repair strategy, and resume from repair queue"

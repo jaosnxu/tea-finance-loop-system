@@ -48,6 +48,7 @@ def boot_runtime(
     skill_registry = SkillRegistry(skill_registry_path)
     connector_registry = ConnectorRegistry(connector_registry_path)
     repository_memory_store = _build_repository_memory(payload.environment)
+    claimed_repair_item = _claim_repair_queue_item(payload, repository_memory_store, resume_existing=resume_existing)
     repository_memory_snapshot = (
         repository_memory_store.read_required_context() if repository_memory_store else {}
     )
@@ -97,6 +98,9 @@ def boot_runtime(
             "active_worktrees": [primary_worktree.worktree_id],
         }
     )
+    if claimed_repair_item:
+        memory.task_memory["active_repair_queue_item"] = claimed_repair_item
+        task_record.artifacts.append({"type": "repair_queue_resume", "value": claimed_repair_item})
     memory.system_memory.update(
         {
             "available_skills": [skill.name for skill in skill_registry.list_active()],
@@ -110,6 +114,9 @@ def boot_runtime(
             "loaded_files": sorted(repository_memory_snapshot["files"].keys()),
             "recent_action_count": len(repository_memory_snapshot["recent_actions"]),
             "recent_intent_debt_count": len(repository_memory_snapshot["recent_intent_debt"]),
+            "recent_repair_queue_count": len(repository_memory_snapshot["recent_repair_queue"]),
+            "open_repair_queue_count": len(repository_memory_snapshot["open_repair_queue"]),
+            "claimable_repair_queue_count": len(repository_memory_snapshot["claimable_repair_queue"]),
             "recent_regression_candidate_count": len(repository_memory_snapshot["recent_regression_candidates"]),
             "recent_run_summary_count": len(repository_memory_snapshot["recent_run_summaries"]),
             "recent_success_count": len(repository_memory_snapshot["recent_successes"]),
@@ -158,6 +165,35 @@ def _build_repository_memory(environment: dict) -> RepositoryMemory | None:
         repository_root = environment.get("repository_root") or environment.get("source_path") or "."
         path = f"{repository_root}/{repository_memory_path}"
     return RepositoryMemory(path)
+
+
+def _claim_repair_queue_item(
+    payload: BootPayload,
+    repository_memory_store: RepositoryMemory | None,
+    *,
+    resume_existing: bool,
+) -> dict | None:
+    if not repository_memory_store or resume_existing:
+        return None
+    source_task_id = payload.environment.get("repair_queue_source_task_id")
+    auto_resume = bool(payload.policy.get("auto_resume_repair_queue") or source_task_id)
+    if not auto_resume:
+        return None
+    if source_task_id:
+        candidates = repository_memory_store.list_repair_items(
+            status="open",
+            queue_classes={"automated_repair", "delayed_retry"},
+            limit=10000,
+        )
+        item = next((candidate for candidate in candidates if candidate.get("source_task_id") == source_task_id), None)
+    else:
+        item = repository_memory_store.next_claimable_repair_item()
+    if not item:
+        return None
+    return repository_memory_store.claim_repair_item(
+        source_task_id=str(item["source_task_id"]),
+        worker_task_id=payload.task_id,
+    )
 
 
 def _load_project_memory_index(environment: dict) -> dict:

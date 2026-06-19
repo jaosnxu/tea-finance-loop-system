@@ -88,6 +88,7 @@ def build_run_summary(record: TaskRecord, reports: list[dict] | None = None, tra
         },
         "failures": record.failure_history,
         "intent_debt": record.intent_debt,
+        "repair_queue": _repair_queue_hint(record),
         "verification": {
             "ci_setup": ci_setup,
             "ci_summary": ci_summary,
@@ -127,3 +128,15 @@ def _next_action(record: TaskRecord) -> str:
     if record.current_stage:
         return f"Continue from stage {record.current_stage}."
     return "Inspect task record before continuing."
+
+
+def _repair_queue_hint(record: TaskRecord) -> dict:
+    if record.status != "blocked" or not record.intent_debt:
+        return {"queued": False}
+    failure_type = str(record.intent_debt.get("failure_type") or "unknown")
+    return {
+        "queued": True,
+        "failure_type": failure_type,
+        "queue_class": "automated_repair" if failure_type == "code_error" else "human_blocked",
+        "next_step": record.intent_debt.get("next_step"),
+    }

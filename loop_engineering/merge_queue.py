@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from urllib import request
 
 
-DEFAULT_REQUIRED_CHECKS = ["Loop runtime tests", "Tea finance build and tests"]
+DEFAULT_REQUIRED_CHECKS = ["lint", "typecheck", "test", "build-smoke", "audit"]
 
 
 class GitHubClient(Protocol):
