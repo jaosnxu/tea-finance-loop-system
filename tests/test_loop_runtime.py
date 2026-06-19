@@ -7,6 +7,7 @@ from pathlib import Path
 
 from loop_engineering.boot import boot_runtime, validate_boot_payload
 from loop_engineering.models import BootPayload
+from loop_engineering.repository_memory import RepositoryMemory
 from loop_engineering.watchdog import evaluate_heartbeat
 
 
@@ -246,6 +247,93 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.repair_count, 1)
             self.assertIsNotNone(runtime.context.task_record.intent_debt)
             self.assertEqual(runtime.context.task_record.intent_debt["reason"], "self-repair limit exhausted")
+
+    def test_tool_policy_blocks_high_risk_connector_and_creates_approval_request(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-TOOL-POLICY-APPROVAL",
+                goal="Use GitHub connector with approval policy.",
+                scope={"include": [str(repo_dir)]},
+                acceptance=["Block before high-risk connector executes."],
+                environment={
+                    "source_path": str(repo_dir),
+                    "repository_root": str(repo_dir),
+                    "repository_memory_path": "memory",
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["github"],
+                    "repo": "owner/repo",
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "enforce_tool_policy": True,
+                    "require_approval_for_high_risk_tools": True,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "tool-policy-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=8)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            approvals = RepositoryMemory(Path(repo_dir) / "memory").list_approval_requests(status="open")
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(runtime.context.task_record.intent_debt["failure_type"], "permission_error")
+            self.assertTrue(approvals)
+            self.assertEqual(approvals[-1]["subject"], "github")
+            self.assertIn("approval_request", artifact_types)
+
+    def test_eval_gate_failure_enters_repair_path(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-EVAL-GATE",
+                goal="Run eval gate.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Fail eval when artifact is missing."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "eval_cases": [
+                        {
+                            "name": "requires-nonexistent-artifact",
+                            "required_artifacts": ["nonexistent_artifact"],
+                        }
+                    ],
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 0,
+                    "self_repair_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "eval-gate-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=12)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertIn("eval_summary", artifact_types)
+            self.assertEqual(runtime.context.task_record.intent_debt["failure_type"], "code_error")
 
     def test_runtime_executes_git_cli_test_and_mcp_connectors(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

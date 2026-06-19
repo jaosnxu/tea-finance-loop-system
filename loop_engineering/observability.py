@@ -41,6 +41,7 @@ def build_run_summary(record: TaskRecord, reports: list[dict] | None = None, tra
     project_memory = _latest_artifact(record.artifacts, "project_memory_index_context") or {}
     ci_summary = _latest_artifact(record.artifacts, "ci_suite_summary")
     ci_setup = _latest_artifact(record.artifacts, "ci_setup_result")
+    eval_summary = _latest_artifact(record.artifacts, "eval_summary")
     return {
         "schema_version": "loop.run_summary.v1",
         "task_id": record.task_id,
@@ -92,6 +93,7 @@ def build_run_summary(record: TaskRecord, reports: list[dict] | None = None, tra
         "verification": {
             "ci_setup": ci_setup,
             "ci_summary": ci_summary,
+            "eval_summary": eval_summary,
             "artifact_types": _count_artifact_types(record.artifacts),
             "reports_count": len(reports),
             "trace_count": trace_count,
@@ -137,6 +139,18 @@ def _repair_queue_hint(record: TaskRecord) -> dict:
     return {
         "queued": True,
         "failure_type": failure_type,
-        "queue_class": "automated_repair" if failure_type == "code_error" else "human_blocked",
+        "queue_class": _queue_class(failure_type),
         "next_step": record.intent_debt.get("next_step"),
     }
+
+
+def _queue_class(failure_type: str) -> str:
+    if failure_type == "code_error":
+        return "automated_repair"
+    if failure_type in {"network_error", "timeout"}:
+        return "delayed_retry"
+    if failure_type == "production_risk":
+        return "approval_required"
+    if failure_type in {"permission_error", "auth_error", "configuration_error", "requirement_ambiguity"}:
+        return "human_blocked"
+    return "needs_triage"

@@ -109,6 +109,17 @@ Repair queue 是可恢复状态机，不是普通日志：
 
 自动启动只允许认领 `automated_repair` 和 `delayed_retry`。`human_blocked` 和 `approval_required` 只能在权限、配置、需求或生产批准恢复后由明确启动包恢复。
 
+生产级 Loop 还必须具备以下平台层：
+
+- Tool policy：每个 connector 必须按风险、环境、读写模式决策，生产写入和高风险工具必须可进入 approval inbox
+- Approval inbox：人工介入必须写入 `approval_requests.jsonl`，不能只靠聊天口头确认
+- Scheduler plan：repair queue 必须能生成 claimable、blocked、stale claim 的调度计划
+- Scheduler action：stale claimed repair item 必须可以重新排队，避免 worker 死亡后任务永久卡住
+- Trace：每个 stage、heartbeat、工具结果、gate 结果必须写入 trace，用于审计和复盘
+- Trace summary：平台必须能输出 event count、stage sequence、heartbeat、terminal event 摘要
+- Eval：除单元测试外，任务可以配置 `eval_cases`，按 artifact / acceptance 信号自动评分
+- Regression：失败进入 regression candidate，后续必须能生成 regression manifest、转成固定测试或明确关闭
+
 ### `memory`
 
 任务记录位置，例如：

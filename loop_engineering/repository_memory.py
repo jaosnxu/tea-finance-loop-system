@@ -46,6 +46,10 @@ Loop standards:
 - Network failures can retry automatically.
 - Code failures enter self-repair cycles before intent debt.
 - Exhausted self-repair creates repair queue items for future automatic resume.
+- Repair queue items must be schedulable, claimable, and closed as resolved or failed.
+- Human intervention must go through approval requests, not informal chat-only approval.
+- Tool policy must separate allowed tools, high-risk tools, and production writes.
+- Eval cases and regression candidates must be used to prevent repeated platform failures.
 - Auth, permission, production config, or unclear requirement failures become blocked intent debt.
 - Writer, reviewer, and verifier gates must remain separate in records.
 - Every action must be written outside conversation memory.
@@ -141,6 +145,7 @@ class RepositoryMemory:
         self.action_log_path = self.root / "action_log.jsonl"
         self.intent_debt_path = self.root / "intent_debt.jsonl"
         self.repair_queue_path = self.root / "repair_queue.jsonl"
+        self.approval_request_path = self.root / "approval_requests.jsonl"
         self.regression_candidate_path = self.root / "regression_candidates.jsonl"
         self.current_status_path = self.root / "current_status.json"
         self.run_history_path = self.root / "run_history.jsonl"
@@ -163,6 +168,7 @@ class RepositoryMemory:
             self.action_log_path,
             self.intent_debt_path,
             self.repair_queue_path,
+            self.approval_request_path,
             self.regression_candidate_path,
             self.run_history_path,
             self.success_log_path,
@@ -206,6 +212,8 @@ class RepositoryMemory:
                 queue_classes={"automated_repair", "delayed_retry"},
                 limit=recent_actions,
             ),
+            "recent_approval_requests": self._read_jsonl_tail(self.approval_request_path, recent_actions),
+            "open_approval_requests": self.list_approval_requests(status="open", limit=recent_actions),
             "recent_regression_candidates": self._read_jsonl_tail(self.regression_candidate_path, recent_actions),
             "recent_run_summaries": self._read_jsonl_tail(self.run_history_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
@@ -321,6 +329,74 @@ class RepositoryMemory:
             },
         )
 
+    def create_approval_request(
+        self,
+        *,
+        task_id: str,
+        approval_type: str,
+        subject: str,
+        reason: str,
+        risk_level: str,
+    ) -> dict[str, Any]:
+        self.initialize()
+        approval_id = f"{task_id}:{approval_type}:{subject}"
+        existing = self._latest_approval_request(approval_id)
+        if existing and existing.get("status") == "open":
+            return existing
+        row = {
+            "timestamp": utc_now(),
+            "approval_id": approval_id,
+            "task_id": task_id,
+            "approval_type": approval_type,
+            "subject": subject,
+            "reason": reason,
+            "risk_level": risk_level,
+            "status": "open",
+        }
+        self._append_jsonl(self.approval_request_path, row)
+        return row
+
+    def list_approval_requests(self, *, status: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
+        self.initialize()
+        rows = self._read_jsonl_tail(self.approval_request_path, 10000)
+        latest_by_id: dict[str, dict[str, Any]] = {}
+        order: list[str] = []
+        for row in rows:
+            approval_id = str(row.get("approval_id") or "")
+            if not approval_id:
+                continue
+            if approval_id not in latest_by_id:
+                order.append(approval_id)
+            latest_by_id[approval_id] = row
+        items = [latest_by_id[approval_id] for approval_id in order if approval_id in latest_by_id]
+        if status is not None:
+            items = [item for item in items if item.get("status") == status]
+        return items[-limit:]
+
+    def resolve_approval_request(
+        self,
+        *,
+        approval_id: str,
+        status: str,
+        resolved_by: str,
+        resolution_note: str,
+    ) -> dict[str, Any] | None:
+        if status not in {"approved", "rejected"}:
+            raise ValueError("approval status must be approved or rejected")
+        self.initialize()
+        item = self._latest_approval_request(approval_id)
+        if not item:
+            return None
+        resolved = {
+            **item,
+            "timestamp": utc_now(),
+            "status": status,
+            "resolved_by": resolved_by,
+            "resolution_note": resolution_note,
+        }
+        self._append_jsonl(self.approval_request_path, resolved)
+        return resolved
+
     def enqueue_repair(
         self,
         *,
@@ -424,6 +500,25 @@ class RepositoryMemory:
         self._append_jsonl(self.repair_queue_path, finished)
         return finished
 
+    def requeue_repair_item(
+        self,
+        *,
+        source_task_id: str,
+        reason: str,
+    ) -> dict[str, Any] | None:
+        self.initialize()
+        item = self._latest_repair_queue_item(source_task_id)
+        if not item:
+            return None
+        requeued = {
+            **item,
+            "timestamp": utc_now(),
+            "status": "open",
+            "requeue_reason": reason,
+        }
+        self._append_jsonl(self.repair_queue_path, requeued)
+        return requeued
+
     def append_regression_candidate(
         self,
         *,
@@ -448,6 +543,31 @@ class RepositoryMemory:
                 "test_status": "candidate",
             },
         )
+
+    def list_regression_candidates(self, *, status: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
+        self.initialize()
+        rows = self._read_jsonl_tail(self.regression_candidate_path, 10000)
+        if status is not None:
+            rows = [row for row in rows if row.get("test_status") == status]
+        return rows[-limit:]
+
+    def build_regression_manifest(self, *, limit: int = 20) -> dict[str, Any]:
+        candidates = self.list_regression_candidates(status="candidate", limit=limit)
+        return {
+            "status": "available",
+            "candidate_count": len(candidates),
+            "recommended_tests": [
+                {
+                    "name": f"regression_{candidate.get('task_id', 'unknown').lower()}_{candidate.get('failure_type', 'unknown')}",
+                    "task_id": candidate.get("task_id"),
+                    "failure_type": candidate.get("failure_type"),
+                    "stage": candidate.get("stage"),
+                    "reproduction": candidate.get("reproduction"),
+                    "expected_behavior": candidate.get("expected_behavior"),
+                }
+                for candidate in candidates
+            ],
+        }
 
     def append_experience(
         self,
@@ -498,6 +618,14 @@ class RepositoryMemory:
         latest = None
         for row in rows:
             if row.get("source_task_id") == source_task_id:
+                latest = row
+        return latest
+
+    def _latest_approval_request(self, approval_id: str) -> dict[str, Any] | None:
+        rows = self._read_jsonl_tail(self.approval_request_path, 10000)
+        latest = None
+        for row in rows:
+            if row.get("approval_id") == approval_id:
                 latest = row
         return latest
 
