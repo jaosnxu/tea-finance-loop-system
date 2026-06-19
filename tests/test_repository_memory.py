@@ -84,7 +84,8 @@ class RepositoryMemoryTests(unittest.TestCase):
             snapshot = memory.read_required_context()
 
             self.assertTrue((Path(root_dir) / "memory" / "README.md").exists())
-            self.assertTrue((Path(root_dir) / "memory" / "projects" / "tea-finance-system.md").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "projects" / "default-project.md").exists())
+            self.assertFalse((Path(root_dir) / "memory" / "projects" / "tea-finance-system.md").exists())
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "repair_queue.jsonl").exists())
@@ -95,6 +96,8 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertIn("project_standards.md", snapshot["files"])
             self.assertIn("verification/regression_policy.md", snapshot["files"])
             self.assertIn("backlog/loop-engineering.json", snapshot["files"])
+            self.assertIn("backlog/default-project.json", snapshot["files"])
+            self.assertNotIn("backlog/tea-finance-system.json", snapshot["files"])
             self.assertEqual(snapshot["recent_actions"], [])
 
     def test_runtime_loads_repository_memory_and_records_actions(self) -> None:
