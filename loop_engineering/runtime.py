@@ -25,6 +25,29 @@ STATE_ORDER = [
     "verifying",
 ]
 
+TRIGGER_SUMMARY_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "be",
+    "do",
+    "for",
+    "from",
+    "if",
+    "in",
+    "into",
+    "needs",
+    "not",
+    "of",
+    "or",
+    "the",
+    "this",
+    "to",
+    "use",
+    "when",
+    "with",
+}
+
 
 class LoopRuntime:
     def __init__(self, context: RuntimeContext, task_store, subagent_manager, memory_store=None, repository_memory_store=None) -> None:
@@ -740,10 +763,10 @@ class LoopRuntime:
                 tag_tokens = set(re.findall(r"[a-z0-9_]+", tag.lower()))
                 if tag.lower() in text or tokens.intersection(tag_tokens):
                     score += 3
-            trigger_tokens = set(re.findall(r"[a-z0-9_]+", skill.trigger_summary.lower()))
+            trigger_tokens = _trigger_summary_tokens(skill.trigger_summary)
             score += len(tokens.intersection(trigger_tokens))
-            ranked.append((score, -skill.priority, skill.name))
-        ranked.sort(reverse=True)
+            ranked.append((score, skill.priority, skill.name))
+        ranked.sort(key=lambda item: (-item[0], item[1], item[2]))
         default_selection = [name for score, _, name in ranked if score > 0][:3]
         if not default_selection:
             default_selection = _generic_skill_fallback(self.context.skills)
@@ -862,6 +885,14 @@ def _intent_debt_next_step(failure_type: str) -> str:
     if failure_type == "production_risk":
         return "require explicit production approval before resuming"
     return "inspect failure history, choose repair strategy, and resume from repair queue"
+
+
+def _trigger_summary_tokens(summary: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9_]+", summary.lower())
+        if token not in TRIGGER_SUMMARY_STOPWORDS
+    }
 
 
 def _generic_skill_fallback(skills) -> list[str]:
