@@ -73,8 +73,9 @@ class LoopRuntimeTests(unittest.TestCase):
             artifact_types = {artifact["type"] for artifact in task_record["artifacts"]}
             self.assertIn("issue_backlog", artifact_types)
             self.assertIn("tool_contracts", artifact_types)
-            self.assertIn("implementation_tracks", artifact_types)
-            self.assertIn("required_statuses", artifact_types)
+            self.assertIn("module_list", artifact_types)
+            self.assertIn("entities", artifact_types)
+            self.assertIn("page_map", artifact_types)
             self.assertIn("filesystem_listing", artifact_types)
             self.assertTrue(task_record["active_subagents"])
             memory_data = json.loads(memory_path.read_text(encoding="utf-8"))
@@ -90,6 +91,47 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(run_summary["schema_version"], "loop.run_summary.v1")
             self.assertEqual(run_summary["status"], "completed")
             self.assertTrue(run_summary["stages"])
+
+    def test_generic_project_goal_does_not_fallback_to_finance_skills(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-GENERIC-SKILL-FALLBACK",
+                goal="启动 xtgzpt 协同工作平台项目完整循环。",
+                scope={"include": ["/tmp/xtgzpt-bootstrap/xtgzpt"], "exclude": ["finance"]},
+                acceptance=["读取项目记忆并形成项目执行计划。", "Do not use finance skills for this project."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 3,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={
+                    "record_path": records_dir,
+                    "memory_namespace": "generic-skill-fallback",
+                },
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            for _ in range(4):
+                runtime.step()
+                if runtime.context.task_record.current_stage == "preflight":
+                    break
+
+            selected = runtime.context.memory.task_memory["selected_skills"]
+            self.assertIn("prd.parse", selected)
+            self.assertIn("backend.schema-design", selected)
+            self.assertIn("frontend.page-build", selected)
+            self.assertFalse(any(name.startswith("finance.") for name in selected))
 
     def test_network_failure_retries_and_completes_when_cleared(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

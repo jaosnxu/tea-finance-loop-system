@@ -21,20 +21,17 @@ Rules:
 """,
     "project_context.md": """# Project Context
 
-Loop Engineering is the reusable execution system in this repository.
-`tea-finance-system` is the first business project managed by Loop; it is not the Loop system itself.
+This repository is managed by Loop Engineering.
 
-Primary project:
-- Tea finance management system for a Russian tea-chain business.
-- V1 focus: payment request -> approval -> finance execution -> ledger -> reports.
-- Product principle: configuration-driven backend and componentized frontend.
+Fill this file with the target project's product goal, business boundary, technical boundary, and current stage before using it as a long-term project memory source.
 """,
     "project_status.md": """# Project Status
 
 Current source of truth:
-- GitHub repository: jaosnxu/tea-finance-loop-system
-- Figma file key: DVWsGG329BggsIlWbUXBYS
-- Loop tests should pass before release.
+- Repository: unset
+- Current phase: unset
+- Active branch or PR: unset
+- Required gates: lint, typecheck, test, build-smoke, audit
 
 Update this file whenever a project milestone changes.
 """,
@@ -53,33 +50,25 @@ Loop standards:
 - Auth, permission, production config, or unclear requirement failures become blocked intent debt.
 - Writer, reviewer, and verifier gates must remain separate in records.
 - Every action must be written outside conversation memory.
-
-Tea finance standards:
-- Backend business behavior should be configuration-driven.
-- Organization, tax mode, currency behavior, roles, menus, and approval rules must not be hardcoded.
-- UI is Russian-first in sizing and structure, with Chinese UI available for testing.
-- Default currency is RUB unless organization config enables multi-currency.
 """,
     "decisions.md": """# Decisions
 
 - The repository is the long-term memory source for Loop.
 - Runtime task records remain external, but project-level memory is committed in the repository.
-- `tea-finance-system` is one managed project under Loop.
+- Project-specific decisions must be recorded here when they affect implementation, testing, release, or product scope.
 """,
     "open_questions.md": """# Open Questions
 
-- Production iiko integration credentials and API scope are not configured yet.
-- GitHub Actions workflow is not yet the only CI gate.
-- Final Russia tax/accounting validation still needs a qualified local review before production use.
+- Record unresolved business, technical, permission, integration, or production-risk questions here.
 """,
     "integration_state.md": """# Integration State
 
 GitHub:
-- Repository: jaosnxu/tea-finance-loop-system
+- Repository: unset
 - Default branch: main
 
-Figma:
-- File key: DVWsGG329BggsIlWbUXBYS
+External design:
+- Figma file key: unset
 
 Runtime:
 - Local task records: /private/tmp/loop-task-records
@@ -97,20 +86,16 @@ Required behavior:
 - Memory spine retrieval and experience reuse.
 - MCP, CLI, GitHub, Figma, Product Design, browser, git, and test connector routing.
 """,
-    "projects/tea-finance-system.md": """# Tea Finance System Project Record
+    "projects/default-project.md": """# Project Record
 
 Purpose:
-- Russian tea-chain internal finance, approval, ledger, reporting, organization, role, and configuration system.
+- Fill with this project's business and technical purpose.
 
-V1 boundary:
-- Payment request -> approval -> finance execution -> ledger -> reports.
-- Boss, finance, cashier, and applicant roles.
-- Organization, store, tax mode, bank account, supplier, role, menu, and approval config are backend-managed.
+Current boundary:
+- Fill with current phase scope.
 
 Deferred:
-- Public seal workflow.
-- Mobile app.
-- Full automatic intercompany offset.
+- Fill with explicit non-goals and deferred work.
 """,
     "backlog/loop-engineering.json": """{
   "project": "loop-engineering",
@@ -118,8 +103,8 @@ Deferred:
   "items": []
 }
 """,
-    "backlog/tea-finance-system.json": """{
-  "project": "tea-finance-system",
+    "backlog/default-project.json": """{
+  "project": "default-project",
   "updated_at": "2026-06-18",
   "items": []
 }

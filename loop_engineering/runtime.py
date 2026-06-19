@@ -364,7 +364,7 @@ class LoopRuntime:
         skill_outputs = []
         connector_outputs = []
         for skill in self.context.skills:
-            if skill.name in selected_skill_names[:1]:
+            if skill.name in selected_skill_names:
                 skill_outputs.append(
                     execute_skill(
                         skill,
@@ -724,13 +724,15 @@ class LoopRuntime:
             [
                 self.context.task_record.goal,
                 " ".join(self.context.task_record.acceptance),
-                " ".join(self.context.task_record.scope.get("exclude", [])),
                 self.context.environment.get("repo", ""),
             ]
         ).lower()
         tokens = set(re.findall(r"[a-z0-9_]+", text))
+        excluded_tokens = _scope_exclusion_tokens(self.context.task_record.scope)
         ranked: list[tuple[int, int, str]] = []
         for skill in self.context.skills:
+            if _skill_is_excluded(skill, excluded_tokens):
+                continue
             score = 0
             if skill.domain and skill.domain.lower() in tokens:
                 score += 5
@@ -744,7 +746,7 @@ class LoopRuntime:
         ranked.sort(reverse=True)
         default_selection = [name for score, _, name in ranked if score > 0][:3]
         if not default_selection:
-            default_selection = [skill.name for skill in self.context.skills[:3]]
+            default_selection = _generic_skill_fallback(self.context.skills)
         discouraged = {
             item["context"].get("skill")
             for item in experience.get("failures", [])
@@ -860,3 +862,30 @@ def _intent_debt_next_step(failure_type: str) -> str:
     if failure_type == "production_risk":
         return "require explicit production approval before resuming"
     return "inspect failure history, choose repair strategy, and resume from repair queue"
+
+
+def _generic_skill_fallback(skills) -> list[str]:
+    generic_domains = {"analysis", "backend", "frontend"}
+    generic_tags = {"prd", "planning", "architecture", "backend", "schema", "frontend", "ui", "page"}
+    generic = [
+        skill
+        for skill in skills
+        if skill.domain in generic_domains or generic_tags.intersection(set(skill.tags))
+    ]
+    if generic:
+        return [skill.name for skill in sorted(generic, key=lambda skill: skill.priority)[:3]]
+    return [skill.name for skill in skills[:3]]
+
+
+def _scope_exclusion_tokens(scope: dict) -> set[str]:
+    return set(re.findall(r"[a-z0-9_]+", " ".join(scope.get("exclude", [])).lower()))
+
+
+def _skill_is_excluded(skill, excluded_tokens: set[str]) -> bool:
+    if skill.domain and skill.domain.lower() in excluded_tokens:
+        return True
+    for tag in skill.tags:
+        tag_tokens = set(re.findall(r"[a-z0-9_]+", tag.lower()))
+        if tag.lower() in excluded_tokens or excluded_tokens.intersection(tag_tokens):
+            return True
+    return False
