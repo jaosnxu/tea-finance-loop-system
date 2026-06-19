@@ -134,6 +134,21 @@
       "output_schema": "schemas/cli.output.json",
       "priority": 16,
       "standard_name": "local_cli_adapter"
+    },
+    {
+      "name": "codex_executor",
+      "version": "v1",
+      "status": "stable",
+      "target": "codex",
+      "capabilities": ["non_interactive_code_writer", "local_diff_generation", "self_contained_task_execution"],
+      "risk_level": "high",
+      "mode": "read_write",
+      "auth_requirements": ["codex_login"],
+      "entry": "loop_registry/connectors/codex_executor.v1.json",
+      "input_schema": "schemas/codex_executor.input.json",
+      "output_schema": "schemas/codex_executor.output.json",
+      "priority": 17,
+      "standard_name": "codex_writer_executor"
     }
   ]
 }

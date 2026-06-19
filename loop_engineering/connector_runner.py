@@ -76,6 +76,7 @@ def _execute_shell_connector(connector: ConnectorMeta, spec: dict[str, Any], pay
             command,
             cwd=str(cwd) if cwd else None,
             env=environment_for_command(command),
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
@@ -310,14 +311,25 @@ def _resolve_payload_command(command_from_payload_key: str | None, payload: dict
     if command_from_payload_key:
         value = payload.get(command_from_payload_key)
         if isinstance(value, list) and value:
-            return [str(item) for item in value]
+            return [_format_command_item(str(item), payload) for item in value]
     return []
+
+
+def _format_command_item(value: str, payload: dict[str, Any]) -> str:
+    replacements = {
+        "worktree_path": str(payload.get("worktree_path") or ""),
+        "path": str(payload.get("path") or ""),
+        "git_path": str(payload.get("git_path") or ""),
+    }
+    for key, replacement in replacements.items():
+        value = value.replace(f"{{{key}}}", replacement)
+    return value
 
 
 def _resolve_cwd(executor: dict[str, Any], payload: dict[str, Any]) -> Path | None:
     cwd_from_payload_key = executor.get("cwd_from_payload_key")
     if cwd_from_payload_key and payload.get(cwd_from_payload_key):
-        return Path(str(payload[cwd_from_payload_key]))
+        return Path(_format_command_item(str(payload[cwd_from_payload_key]), payload))
     if payload.get("worktree_path"):
         return Path(str(payload["worktree_path"]))
     if payload.get("path"):

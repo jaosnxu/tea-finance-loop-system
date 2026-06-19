@@ -1,0 +1,16 @@
+{
+  "name": "codex_executor",
+  "version": "v1",
+  "purpose": "Run Codex CLI non-interactively as the Loop writer executor inside the active project worktree.",
+  "executor": {
+    "type": "shell",
+    "command_from_payload_key": "codex_command",
+    "cwd_from_payload_key": "codex_path",
+    "default_command": ["/bin/echo", "codex executor not configured"],
+    "timeout_seconds": 1800
+  },
+  "template": {
+    "summary": "Executed Codex writer connector.",
+    "next_recommendation": "Inspect generated diff with git connector, then run review and verification gates."
+  }
+}

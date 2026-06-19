@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -85,6 +86,34 @@ class ConnectorExecutionTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         stdout = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "stdout")
         self.assertIn("ok-from-cli", stdout)
+
+    def test_codex_executor_connector_executes_writer_command(self) -> None:
+        result = execute_connector(
+            _connector_meta("codex_executor", "codex", "loop_registry/connectors/codex_executor.v1.json"),
+            {
+                "codex_command": ["python3", "-c", "print('ok-from-codex-executor')"],
+                "codex_path": str(REPO_ROOT),
+            },
+        )
+        self.assertEqual(result["status"], "completed")
+        stdout = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "stdout")
+        self.assertIn("ok-from-codex-executor", stdout)
+
+    def test_codex_executor_command_can_target_active_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            result = execute_connector(
+                _connector_meta("codex_executor", "codex", "loop_registry/connectors/codex_executor.v1.json"),
+                {
+                    "codex_command": ["python3", "-c", "import os; print(os.getcwd())"],
+                    "codex_path": "{worktree_path}",
+                    "worktree_path": tmp_dir,
+                },
+            )
+        self.assertEqual(result["status"], "completed")
+        working_directory = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "working_directory")
+        stdout = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "stdout")
+        self.assertEqual(working_directory, tmp_dir)
+        self.assertEqual(os.path.realpath(stdout), os.path.realpath(tmp_dir))
 
     def test_mcp_connector_executes_bridge_command(self) -> None:
         result = execute_connector(
