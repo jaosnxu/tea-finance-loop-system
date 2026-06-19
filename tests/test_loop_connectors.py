@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from loop_engineering.command_resolution import environment_for_command
 from loop_engineering.connector_runner import execute_connector
 from loop_engineering.models import ConnectorMeta
 
@@ -56,6 +57,22 @@ class ConnectorExecutionTests(unittest.TestCase):
         self.assertEqual(result["status"], "completed")
         summary = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "ci_suite_summary")
         self.assertEqual(summary["passed"], 1)
+
+    def test_test_connector_resolves_executable_with_login_shell_path(self) -> None:
+        result = execute_connector(
+            _connector_meta("test", "test", "loop_registry/connectors/test.v1.json"),
+            {
+                "test_command": ["python3", "-c", "print('resolved-command-ok')"],
+                "worktree_path": str(REPO_ROOT),
+            },
+        )
+        self.assertEqual(result["status"], "completed")
+        results = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "ci_suite_results")
+        self.assertTrue(results[0]["command"][0].endswith("python3"))
+
+    def test_resolved_command_directory_is_added_to_path(self) -> None:
+        env = environment_for_command(["/tmp/example-tool/bin/npm", "run", "ci"], base_env={"PATH": "/usr/bin"})
+        self.assertEqual(env["PATH"].split(":")[0], "/tmp/example-tool/bin")
 
     def test_cli_connector_executes_command(self) -> None:
         result = execute_connector(
@@ -233,6 +250,21 @@ while True:
         summary = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "ci_suite_summary")
         self.assertEqual(summary["total"], 2)
         self.assertEqual(summary["passed"], 2)
+
+    def test_ci_connector_runs_setup_before_suite(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            marker = Path(tmp_dir) / "setup-marker.txt"
+            result = execute_connector(
+                _connector_meta("test", "test", "loop_registry/connectors/test.v1.json"),
+                {
+                    "test_setup_command": ["python3", "-c", f"from pathlib import Path; Path({str(marker)!r}).write_text('ready')"],
+                    "test_command": ["python3", "-c", f"from pathlib import Path; raise SystemExit(0 if Path({str(marker)!r}).exists() else 2)"],
+                    "worktree_path": tmp_dir,
+                },
+            )
+        self.assertEqual(result["status"], "completed")
+        setup = next(artifact["value"] for artifact in result["artifacts"] if artifact["type"] == "ci_setup_result")
+        self.assertEqual(setup["status"], "passed")
 
 
 if __name__ == "__main__":

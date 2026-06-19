@@ -11,7 +11,7 @@ class MCPProtocolError(RuntimeError):
 
 
 class MCPStdioClient:
-    def __init__(self, command: list[str], timeout_seconds: int = 30) -> None:
+    def __init__(self, command: list[str], timeout_seconds: int = 30, env: dict[str, str] | None = None) -> None:
         if not command:
             raise MCPProtocolError("MCP server command is required")
         self.command = command
@@ -22,6 +22,7 @@ class MCPStdioClient:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
         )
 
     def initialize(self) -> dict[str, Any]:

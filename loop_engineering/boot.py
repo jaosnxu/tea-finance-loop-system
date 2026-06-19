@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from .memory_store import MemoryStore
 from .models import BootPayload, RuntimeContext, TaskRecord
+from .project_memory_index import load_project_memory_index
 from .registry import ConnectorRegistry, SkillRegistry
 from .repository_memory import RepositoryMemory
 from .runtime import LoopRuntime
@@ -50,6 +51,12 @@ def boot_runtime(
     repository_memory_snapshot = (
         repository_memory_store.read_required_context() if repository_memory_store else {}
     )
+    project_memory_index_snapshot = _load_project_memory_index(payload.environment)
+    if (
+        payload.environment.get("require_project_memory_index", False)
+        and project_memory_index_snapshot.get("status") != "available"
+    ):
+        raise LoopBootError("project memory index is required but missing")
 
     worktree_manager = WorktreeManager(payload.environment["worktree_root"], payload.task_id)
     if resume_existing and task_store.exists():
@@ -108,6 +115,15 @@ def boot_runtime(
             "recent_failure_count": len(repository_memory_snapshot["recent_failures"]),
             "current_status": repository_memory_snapshot["current_status"],
         }
+    if project_memory_index_snapshot:
+        memory.project_memory["project_memory_index"] = {
+            "root": project_memory_index_snapshot["root"],
+            "index_path": project_memory_index_snapshot["index_path"],
+            "status": project_memory_index_snapshot["status"],
+            "loaded_files": project_memory_index_snapshot["loaded_files"],
+            "missing_files": project_memory_index_snapshot["missing_files"],
+            "rejected_files": project_memory_index_snapshot.get("rejected_files", []),
+        }
     memory_store.save(memory)
 
     subagents = subagent_store.load_many(task_record.active_subagents) if resume_existing else []
@@ -121,7 +137,12 @@ def boot_runtime(
         subagents=subagents,
         environment=payload.environment,
         policy=payload.policy,
-        repository_memory=repository_memory_snapshot,
+        repository_memory={
+            **repository_memory_snapshot,
+            "project_memory_index": project_memory_index_snapshot,
+        }
+        if repository_memory_snapshot or project_memory_index_snapshot
+        else {},
     )
     runtime = LoopRuntime(context, task_store, subagent_manager, memory_store, repository_memory_store)
     return runtime, task_store, memory_store
@@ -136,3 +157,15 @@ def _build_repository_memory(environment: dict) -> RepositoryMemory | None:
         repository_root = environment.get("repository_root") or environment.get("source_path") or "."
         path = f"{repository_root}/{repository_memory_path}"
     return RepositoryMemory(path)
+
+
+def _load_project_memory_index(environment: dict) -> dict:
+    project_root = environment.get("project_root") or environment.get("source_path")
+    if not project_root:
+        return {}
+    index_path = environment.get("project_memory_index_path", "docs/loop/00_MEMORY_INDEX.md")
+    return load_project_memory_index(
+        project_root,
+        index_path=index_path,
+        recent_limit=int(environment.get("project_memory_recent_limit", 3)),
+    )
