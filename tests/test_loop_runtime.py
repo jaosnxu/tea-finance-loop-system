@@ -8,10 +8,20 @@ from pathlib import Path
 from loop_engineering.boot import boot_runtime, validate_boot_payload
 from loop_engineering.models import BootPayload
 from loop_engineering.repository_memory import RepositoryMemory
+from loop_engineering.runtime import _trigger_summary_tokens
 from loop_engineering.watchdog import evaluate_heartbeat
 
 
 class LoopRuntimeTests(unittest.TestCase):
+    def test_trigger_summary_tokens_drop_boilerplate_words(self) -> None:
+        tokens = _trigger_summary_tokens(
+            "Use when creating or upgrading a reusable engineering governance system for a workspace."
+        )
+        self.assertNotIn("use", tokens)
+        self.assertNotIn("for", tokens)
+        self.assertIn("engineering", tokens)
+        self.assertIn("governance", tokens)
+
     def test_validate_boot_payload_requires_goal(self) -> None:
         with self.assertRaises(ValueError):
             validate_boot_payload(
