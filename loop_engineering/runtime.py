@@ -49,6 +49,7 @@ class LoopRuntime:
             )
         elif stage == "understanding":
             repository_memory = self.context.repository_memory
+            project_memory_index = repository_memory.get("project_memory_index", {})
             result = RuntimeStepResult(
                 state=stage,
                 summary="Parsed task scope, acceptance, available resources, and repository memory.",
@@ -64,6 +65,15 @@ class LoopRuntime:
                         "recent_regression_candidate_count": len(repository_memory.get("recent_regression_candidates", [])),
                         "current_status": repository_memory.get("current_status", {}),
                     },
+                    {
+                        "type": "read_project_memory_index",
+                        "root": project_memory_index.get("root"),
+                        "index_path": project_memory_index.get("index_path"),
+                        "status": project_memory_index.get("status"),
+                        "loaded_files": project_memory_index.get("loaded_files", []),
+                        "missing_files": project_memory_index.get("missing_files", []),
+                        "rejected_files": project_memory_index.get("rejected_files", []),
+                    },
                 ],
                 artifacts=[
                     {
@@ -76,6 +86,15 @@ class LoopRuntime:
                         "recent_success_count": len(repository_memory.get("recent_successes", [])),
                         "recent_failure_count": len(repository_memory.get("recent_failures", [])),
                         "current_status": repository_memory.get("current_status", {}),
+                    },
+                    {
+                        "type": "project_memory_index_context",
+                        "root": project_memory_index.get("root"),
+                        "index_path": project_memory_index.get("index_path"),
+                        "status": project_memory_index.get("status"),
+                        "loaded_files": project_memory_index.get("loaded_files", []),
+                        "missing_files": project_memory_index.get("missing_files", []),
+                        "rejected_files": project_memory_index.get("rejected_files", []),
                     }
                 ],
                 next_state="planning",
@@ -358,6 +377,7 @@ class LoopRuntime:
                             "cli_command": self.context.environment.get("cli_command"),
                             "cli_path": self.context.environment.get("cli_path") or self.context.environment.get("source_path", "."),
                             "test_command": self.context.environment.get("test_command"),
+                            "test_setup_command": self.context.environment.get("test_setup_command"),
                             "test_suites": self.context.environment.get("test_suites"),
                             "mcp_command": self.context.environment.get("mcp_command"),
                             "mcp_server_command": self.context.environment.get("mcp_server_command"),

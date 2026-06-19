@@ -5,6 +5,7 @@
   "executor": {
     "type": "ci_suite",
     "command_from_payload_key": "test_command",
+    "setup_command_from_payload_key": "test_setup_command",
     "cwd_from_payload_key": "worktree_path",
     "default_suites": [
       {

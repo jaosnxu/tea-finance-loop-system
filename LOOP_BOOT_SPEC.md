@@ -41,6 +41,17 @@ memory:
 - available_connectors
 - worktree_mode
 - auth_state
+- project_root
+- project_memory_index_path
+- require_project_memory_index
+- test_setup_command
+- test_command
+
+当任务针对具体业务项目时，必须提供 `project_root`。Loop 会读取目标项目的 `docs/loop/00_MEMORY_INDEX.md`，并把该索引列出的项目宪法、技术标准、业务计划、测试标准和最近日志装入 runtime memory。
+
+如果 `require_project_memory_index=true`，目标项目缺少 memory index 时启动必须失败，不能退回到对话记忆或人工脑内判断。
+
+当任务需要在隔离 worktree 运行测试时，可以提供 `test_setup_command`。Loop 必须先执行 setup，再执行 `test_command`，并把 setup 结果和 CI 结果分别写入外部任务记录。
 
 ### `policy`
 
