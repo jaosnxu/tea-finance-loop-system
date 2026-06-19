@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from urllib import request
 
 
-DEFAULT_REQUIRED_CHECKS = ["lint", "typecheck", "test", "build-smoke", "audit"]
+DEFAULT_REQUIRED_CHECKS = ["Loop runtime tests", "Tea finance build and tests"]
 
 
 class GitHubClient(Protocol):
@@ -183,10 +183,17 @@ class MergeQueueRunner:
         return pr
 
     def _check_runs(self, sha: str) -> list[dict[str, Any]]:
-        status, body = self.client.request("GET", f"/commits/{sha}/check-runs")
-        if not 200 <= status < 300:
-            raise RuntimeError(f"Failed to fetch check runs for {sha}: {status} {body.get('message', '')}")
-        return list(body.get("check_runs", []))
+        page = 1
+        check_runs: list[dict[str, Any]] = []
+        while True:
+            status, body = self.client.request("GET", f"/commits/{sha}/check-runs?per_page=100&page={page}")
+            if not 200 <= status < 300:
+                raise RuntimeError(f"Failed to fetch check runs for {sha}: {status} {body.get('message', '')}")
+            page_runs = list(body.get("check_runs", []))
+            check_runs.extend(page_runs)
+            if len(page_runs) < 100:
+                return check_runs
+            page += 1
 
     def _required_checks_green(self, check_runs: list[dict[str, Any]]) -> bool:
         return all(

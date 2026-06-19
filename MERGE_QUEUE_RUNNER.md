@@ -32,11 +32,16 @@ python3 scripts/merge_queue.py --queue 28,29,31 --repo owner/repo --apply
 - Target base: `main`
 - Merge method: `merge`
 - Required checks:
-  - `lint`
-  - `typecheck`
-  - `test`
-  - `build-smoke`
-  - `audit`
+  - `Loop runtime tests`
+  - `Tea finance build and tests`
+
+These defaults match this Loop system repository. Product repositories should pass their own protected check names with `--required-checks`.
+
+Example for `xtgzpt`:
+
+```bash
+python3 scripts/merge_queue.py --queue 28,29,31 --repo jaosnxu/xtgzpt --required-checks lint,typecheck,test,build-smoke,audit --apply
+```
 
 ## Authentication
 
