@@ -83,6 +83,20 @@
       "trigger_summary": "Use when a page or dashboard must be implemented from a structured spec.",
       "priority": 30,
       "standard_name": "implementation_skill"
+    },
+    {
+      "name": "loop.system-bootstrap",
+      "version": "v1",
+      "status": "core",
+      "domain": "system-governance",
+      "tags": ["bootstrap", "system-governance", "memory-spine", "ci-gate", "skill-registry", "connector-registry"],
+      "owner": "system",
+      "entry": "loop_registry/skills/loop.system-bootstrap.v1.json",
+      "input_schema": "schemas/loop.system-bootstrap.input.json",
+      "output_schema": "schemas/loop.system-bootstrap.output.json",
+      "trigger_summary": "Use when creating or upgrading a reusable engineering governance system for a workspace, including memory spine, skill registry, connector registry, CI gates, PR gates, issue register, and separation rules.",
+      "priority": 4,
+      "standard_name": "loop_system_skill"
     }
   ]
 }
