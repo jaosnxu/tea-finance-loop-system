@@ -386,6 +386,13 @@ class LoopRuntime:
         selected_skill_names = self.context.memory.task_memory.get("selected_skills", [])
         skill_outputs = []
         connector_outputs = []
+        source_path = self.context.environment.get("source_path")
+        connector_worktree_path = (
+            self.context.environment.get("worktree_path")
+            or source_path
+            or self.context.primary_worktree.path
+        )
+        connector_repo_path = self.context.environment.get("git_path") or source_path or connector_worktree_path
         for skill in self.context.skills:
             if skill.name in selected_skill_names:
                 skill_outputs.append(
@@ -411,9 +418,9 @@ class LoopRuntime:
                 execute_connector(
                     connector,
                     {
-                        "path": self.context.environment.get("source_path", "."),
-                        "worktree_path": self.context.primary_worktree.path,
-                        "git_path": self.context.environment.get("source_path", "."),
+                        "path": source_path or connector_worktree_path,
+                        "worktree_path": connector_worktree_path,
+                        "git_path": connector_repo_path,
                         "target": self.context.environment.get("browser_target", "about:blank"),
                         "ui_acceptance_paths": self.context.environment.get("ui_acceptance_paths", []),
                         "repo": self.context.environment.get("repo", "unknown"),
@@ -428,9 +435,9 @@ class LoopRuntime:
                         "git_command": self.context.environment.get("git_command"),
                         "git_base_ref": self.context.environment.get("git_base_ref"),
                         "cli_command": self.context.environment.get("cli_command"),
-                        "cli_path": self.context.environment.get("cli_path") or self.context.environment.get("source_path", "."),
+                        "cli_path": self.context.environment.get("cli_path") or source_path or connector_worktree_path,
                         "codex_command": self.context.environment.get("codex_command"),
-                        "codex_path": self.context.environment.get("codex_path") or self.context.primary_worktree.path,
+                        "codex_path": self.context.environment.get("codex_path") or connector_worktree_path,
                         "test_command": self.context.environment.get("test_command"),
                         "test_setup_command": self.context.environment.get("test_setup_command"),
                         "test_suites": self.context.environment.get("test_suites"),
@@ -925,9 +932,9 @@ def _generic_skill_fallback(skills) -> list[str]:
 
 def _connector_execution_order(connector) -> tuple[int, int]:
     phase_order = {
-        "git": 10,
+        "codex_executor": 10,
         "filesystem": 20,
-        "codex_executor": 30,
+        "git": 30,
         "cli": 40,
         "mcp": 45,
         "test": 50,
