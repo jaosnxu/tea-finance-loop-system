@@ -83,6 +83,12 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertTrue(run_report_path.exists())
             run_report = json.loads(run_report_path.read_text(encoding="utf-8"))
             self.assertEqual(run_report["issue_count"], len(task_record["issue_backlog"]))
+            run_summary_path = Path(records_dir) / payload.task_id / "run_summary.json"
+            self.assertTrue(run_summary_path.exists())
+            run_summary = json.loads(run_summary_path.read_text(encoding="utf-8"))
+            self.assertEqual(run_summary["schema_version"], "loop.run_summary.v1")
+            self.assertEqual(run_summary["status"], "completed")
+            self.assertTrue(run_summary["stages"])
 
     def test_network_failure_retries_and_completes_when_cleared(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

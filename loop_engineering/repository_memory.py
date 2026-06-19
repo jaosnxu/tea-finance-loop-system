@@ -139,6 +139,7 @@ class RepositoryMemory:
         self.intent_debt_path = self.root / "intent_debt.jsonl"
         self.regression_candidate_path = self.root / "regression_candidates.jsonl"
         self.current_status_path = self.root / "current_status.json"
+        self.run_history_path = self.root / "run_history.jsonl"
         self.success_log_path = self.root / "experience" / "successes.jsonl"
         self.failure_log_path = self.root / "experience" / "failures.jsonl"
 
@@ -158,6 +159,7 @@ class RepositoryMemory:
             self.action_log_path,
             self.intent_debt_path,
             self.regression_candidate_path,
+            self.run_history_path,
             self.success_log_path,
             self.failure_log_path,
         ]:
@@ -193,6 +195,7 @@ class RepositoryMemory:
             "recent_actions": self._read_jsonl_tail(self.action_log_path, recent_actions),
             "recent_intent_debt": self._read_jsonl_tail(self.intent_debt_path, recent_actions),
             "recent_regression_candidates": self._read_jsonl_tail(self.regression_candidate_path, recent_actions),
+            "recent_run_summaries": self._read_jsonl_tail(self.run_history_path, recent_actions),
             "recent_successes": self._read_jsonl_tail(self.success_log_path, recent_actions),
             "recent_failures": self._read_jsonl_tail(self.failure_log_path, recent_actions),
             "current_status": json.loads(self.current_status_path.read_text(encoding="utf-8")),
@@ -274,6 +277,27 @@ class RepositoryMemory:
         run_path = self.root / "runs" / f"{task_id}.json"
         run_path.write_text(json.dumps(row, indent=2, ensure_ascii=True), encoding="utf-8")
 
+    def archive_run_summary(self, summary: dict[str, Any]) -> None:
+        self.initialize()
+        task_id = summary["task_id"]
+        run_path = self.root / "runs" / f"{task_id}.json"
+        run_path.write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
+        if summary.get("status") in {"completed", "blocked", "aborted"} and not self._run_history_contains(task_id):
+            self._append_jsonl(
+                self.run_history_path,
+                {
+                    "timestamp": utc_now(),
+                    "task_id": task_id,
+                    "goal": summary.get("goal"),
+                    "status": summary.get("status"),
+                    "current_stage": summary.get("current_stage"),
+                    "failure_count": len(summary.get("failures") or []),
+                    "intent_debt": summary.get("intent_debt"),
+                    "next_action": summary.get("next_action"),
+                    "summary_path": str(run_path),
+                },
+            )
+
     def append_intent_debt(self, *, task_id: str, debt: dict[str, Any]) -> None:
         self.initialize()
         self._append_jsonl(
@@ -345,3 +369,7 @@ class RepositoryMemory:
         for line in lines[-limit:]:
             rows.append(json.loads(line))
         return rows
+
+    def _run_history_contains(self, task_id: str) -> bool:
+        rows = self._read_jsonl_tail(self.run_history_path, 10000)
+        return any(row.get("task_id") == task_id for row in rows)
