@@ -93,7 +93,7 @@ class MergeQueueTests(unittest.TestCase):
         self.assertNotIn(("PATCH", "/pulls/29", {"base": "main"}), client.requests)
 
     def test_default_required_checks_match_loop_repository_protection(self) -> None:
-        self.assertEqual(DEFAULT_REQUIRED_CHECKS, ["Loop runtime tests", "Tea finance build and tests"])
+        self.assertEqual(DEFAULT_REQUIRED_CHECKS, list(PRODUCT_REQUIRED_CHECKS))
 
     def test_fetches_all_check_run_pages(self) -> None:
         class PaginatedClient(FakeGitHubClient):

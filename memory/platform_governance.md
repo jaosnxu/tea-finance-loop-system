@@ -9,9 +9,12 @@ Protected branch target:
 - GitHub API response: branch protection requires GitHub Pro or a public repository.
 
 Required checks:
-- `Loop runtime tests`
-- `Tea finance build and tests`
-- Status: policy-as-code committed in `.github/branch-protection-main.json`, but not enforced by GitHub until branch protection is available.
+- `lint`
+- `typecheck`
+- `test`
+- `build-smoke`
+- `audit`
+- Status: policy-as-code committed in `.github/branch-protection-main.json` and aligned with `.github/workflows/ci.yml`.
 
 Production environment:
 - `production`

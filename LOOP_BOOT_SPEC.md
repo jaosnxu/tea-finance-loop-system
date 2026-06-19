@@ -71,7 +71,7 @@ memory:
 - `permission_error` / `auth_error` / `configuration_error` / `requirement_ambiguity`：记录阻塞，不继续乱跑
 - `production_risk`：立即停止并归档 intent debt
 
-超过 `retry_limit` 或 `self_repair_limit` 后，Loop 必须把问题写入 intent debt，不能无限循环。
+超过 `retry_limit` 或 `self_repair_limit` 后，Loop 必须把问题写入 intent debt，并创建 repair queue item，不能无限循环。
 
 默认循环预算：
 
@@ -89,8 +89,25 @@ Self-repair cycle 必须做完整闭环：
 5. 重新运行 review、verification、merge gate
 6. 成功则完成；失败则进入下一轮 self-repair
 7. 超过预算后写 intent debt 和 regression candidate
+8. 同时写入 `repair_queue.jsonl`，下次启动可从队列恢复
 
 Loop 不能因为代码失败马上问人；只有权限、认证、生产风险、需求不清、配置缺失才允许阻塞等待人处理。
+
+Intent debt 不是终点。它必须带有恢复计划：
+
+- `code_error`：进入 `automated_repair` 队列，下一轮拆小范围、升级工具、从 planning 恢复
+- `network_error` / `timeout`：进入 delayed retry 队列，按 backoff 再启动
+- `permission_error` / `auth_error` / `configuration_error`：进入 human-blocked 队列，外部条件恢复后继续
+- `production_risk`：进入 approval-required 队列，必须显式批准后继续
+
+Repair queue 是可恢复状态机，不是普通日志：
+
+- `open`：等待下一轮 Loop 处理
+- `claimed`：已被某个 worker task 认领，避免重复处理
+- `resolved`：恢复任务完成，原问题关闭
+- `failed`：恢复任务失败，必须产生新的 intent debt / repair queue item
+
+自动启动只允许认领 `automated_repair` 和 `delayed_retry`。`human_blocked` 和 `approval_required` 只能在权限、配置、需求或生产批准恢复后由明确启动包恢复。
 
 ### `memory`
 

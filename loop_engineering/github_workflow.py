@@ -29,7 +29,7 @@ def inspect_github_workflow(payload: dict[str, Any], timeout_seconds: int = 30) 
                     "collect_review_feedback",
                     "merge_after_gates",
                 ],
-                "required_status_checks": ["Loop runtime tests", "Tea finance build and tests"],
+                "required_status_checks": ["lint", "typecheck", "test", "build-smoke", "audit"],
                 "merge_policy": "do_not_merge_until_review_verification_and_remote_checks_pass",
             },
         }
@@ -78,7 +78,7 @@ def inspect_github_workflow(payload: dict[str, Any], timeout_seconds: int = 30) 
             {"type": "github_stdout", "value": stdout},
             {"type": "github_stderr", "value": stderr},
             {"type": "github_remote_status", "value": _parse_remote_status(stdout, completed.returncode)},
-            {"type": "github_required_status_checks", "value": ["Loop runtime tests", "Tea finance build and tests"]},
+            {"type": "github_required_status_checks", "value": ["lint", "typecheck", "test", "build-smoke", "audit"]},
         ]
     )
     if completed.returncode != 0:
