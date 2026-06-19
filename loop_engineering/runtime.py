@@ -4,6 +4,7 @@ from dataclasses import asdict
 import re
 
 from .connector_runner import execute_connector
+from .eval_harness import run_eval_cases
 from .failures import BLOCKING_FAILURES, STOP_FAILURES, classify_failure, should_retry, should_self_repair
 from .gates import merge_gate, review_gate, verification_gate
 from .issue_planner import create_issue_backlog
@@ -315,12 +316,15 @@ class LoopRuntime:
         artifacts = [
             {"type": "tool_contracts", "value": preflight["contracts"]},
             {"type": "missing_auth", "value": preflight["missing_auth"]},
+            {"type": "tool_policy", "value": preflight.get("tool_policy", {})},
         ]
         if preflight["status"] != "passed":
+            failure_type = preflight.get("failure_type") or "auth_error"
             self.context.task_record.intent_debt = self._make_intent_debt(
-                "auth_error",
+                failure_type,
                 f"Preflight gate blocked: {preflight['reason']}.",
             )
+            self._create_approval_requests(preflight)
             return RuntimeStepResult(
                 state="preflight",
                 status="blocked",
@@ -328,7 +332,7 @@ class LoopRuntime:
                 actions=[{"type": "preflight_gate", "reason": preflight["reason"]}],
                 artifacts=artifacts,
                 next_state="blocked",
-                failure_type="auth_error",
+                failure_type=failure_type,
             )
         return RuntimeStepResult(
             state="preflight",
@@ -473,6 +477,20 @@ class LoopRuntime:
         )
 
     def _verify(self) -> RuntimeStepResult:
+        eval_cases = self.context.environment.get("eval_cases") or []
+        if eval_cases:
+            eval_result = run_eval_cases(eval_cases, self.context.task_record.artifacts)
+            self.context.task_record.artifacts.append({"type": "eval_summary", "value": eval_result})
+            self.context.task_record.gate_status["eval_gate"] = eval_result
+            if eval_result["status"] != "passed":
+                return RuntimeStepResult(
+                    state="verifying",
+                    status="failed",
+                    summary="Eval gate failed.",
+                    artifacts=[{"type": "eval_summary", "value": eval_result}],
+                    next_state="repairing",
+                    failure_type="code_error",
+                )
         verification = verification_gate(
             self.context.policy,
             self.context.task_record.acceptance,
@@ -601,6 +619,20 @@ class LoopRuntime:
             "next_step": _intent_debt_next_step(failure_type),
             "created_at": utc_now(),
         }
+
+    def _create_approval_requests(self, preflight: dict) -> None:
+        if not self.repository_memory_store:
+            return
+        tool_policy = preflight.get("tool_policy") or {}
+        for decision in tool_policy.get("blocked", []):
+            request = self.repository_memory_store.create_approval_request(
+                task_id=self.context.task_record.task_id,
+                approval_type="tool_policy",
+                subject=str(decision.get("connector") or decision.get("target") or "unknown"),
+                reason=str(decision.get("reason") or preflight.get("reason") or "approval required"),
+                risk_level=str(decision.get("risk_level") or "unknown"),
+            )
+            self.context.task_record.artifacts.append({"type": "approval_request", "value": request})
 
     def _finish_active_repair_queue_item(self, status: str, summary: str) -> None:
         if not self.repository_memory_store:

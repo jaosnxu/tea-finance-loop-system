@@ -7,7 +7,9 @@ from pathlib import Path
 from loop_engineering.boot import boot_runtime
 from loop_engineering.models import BootPayload
 from loop_engineering.project_memory_index import load_project_memory_index
+from loop_engineering.repair_scheduler import plan_repair_queue, requeue_stale_claims
 from loop_engineering.repository_memory import RepositoryMemory
+from loop_engineering.trace_summary import summarize_trace
 
 
 class RepositoryMemoryTests(unittest.TestCase):
@@ -86,6 +88,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "repair_queue.jsonl").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "approval_requests.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "regression_candidates.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "run_history.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "current_status.json").exists())
@@ -411,6 +414,131 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertEqual(resolved_items[-1]["source_task_id"], "TASK-OLD")
             self.assertEqual(resolved_items[-1]["finished_by_task_id"], "TASK-WORKER")
 
+    def test_repair_scheduler_splits_claimable_blocked_and_stale_items(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.initialize()
+            memory.enqueue_repair(
+                task_id="TASK-AUTO",
+                goal="Auto repair.",
+                failure_type="code_error",
+                reason="self-repair exhausted",
+                next_step="restart",
+                repair_count=3,
+                retry_count=0,
+            )
+            memory.enqueue_repair(
+                task_id="TASK-AUTH",
+                goal="Auth blocked.",
+                failure_type="auth_error",
+                reason="auth missing",
+                next_step="wait for auth",
+                repair_count=0,
+                retry_count=0,
+            )
+
+            plan = plan_repair_queue(memory)
+
+            self.assertEqual(plan["status"], "ready")
+            self.assertEqual(plan["claimable_count"], 1)
+            self.assertEqual(plan["blocked_count"], 1)
+            self.assertEqual(plan["triage_count"], 0)
+
+    def test_repair_scheduler_surfaces_triage_only_items(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.initialize()
+            memory.enqueue_repair(
+                task_id="TASK-UNKNOWN",
+                goal="Unknown failure.",
+                failure_type="unknown",
+                reason="verification failed without classification",
+                next_step="triage failure and assign queue class",
+                repair_count=0,
+                retry_count=0,
+            )
+
+            plan = plan_repair_queue(memory)
+
+            self.assertEqual(plan["status"], "attention_required")
+            self.assertEqual(plan["claimable_count"], 0)
+            self.assertEqual(plan["blocked_count"], 0)
+            self.assertEqual(plan["triage_count"], 1)
+            self.assertEqual(plan["triage"][0]["source_task_id"], "TASK-UNKNOWN")
+            self.assertIn("triage unknown failure repair items", " ".join(plan["next_actions"]))
+
+    def test_repair_scheduler_requeues_stale_claims(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.enqueue_repair(
+                task_id="TASK-STALE",
+                goal="Repair stale claim.",
+                failure_type="code_error",
+                reason="self-repair exhausted",
+                next_step="restart",
+                repair_count=3,
+                retry_count=0,
+            )
+            self.assertIsNotNone(memory.claim_repair_item(source_task_id="TASK-STALE", worker_task_id="TASK-WORKER"))
+
+            result = requeue_stale_claims(memory, stale_claim_minutes=-1)
+
+            self.assertEqual(result["requeued_count"], 1)
+            self.assertEqual(memory.list_repair_items(status="open")[-1]["source_task_id"], "TASK-STALE")
+
+    def test_approval_requests_can_be_created_and_resolved(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            request = memory.create_approval_request(
+                task_id="TASK-APPROVAL",
+                approval_type="tool_policy",
+                subject="github",
+                reason="high-risk connector requires approval",
+                risk_level="high",
+            )
+            resolved = memory.resolve_approval_request(
+                approval_id=request["approval_id"],
+                status="approved",
+                resolved_by="owner",
+                resolution_note="approved for test",
+            )
+
+            self.assertEqual(memory.list_approval_requests(status="open"), [])
+            self.assertIsNotNone(resolved)
+            self.assertEqual(memory.list_approval_requests(status="approved")[-1]["resolved_by"], "owner")
+
+    def test_regression_manifest_builds_recommended_tests(self) -> None:
+        with tempfile.TemporaryDirectory() as repo_dir:
+            memory = RepositoryMemory(Path(repo_dir) / "memory")
+            memory.append_regression_candidate(
+                task_id="TASK-REGRESSION",
+                failure_type="code_error",
+                stage="verifying",
+                summary="Eval failed.",
+                reproduction="Run task through verifying.",
+                expected_behavior="Eval passes.",
+            )
+
+            manifest = memory.build_regression_manifest()
+
+            self.assertEqual(manifest["candidate_count"], 1)
+            self.assertEqual(manifest["recommended_tests"][0]["task_id"], "TASK-REGRESSION")
+            self.assertIn("regression_task-regression_code_error", manifest["recommended_tests"][0]["name"])
+
+    def test_trace_summary_counts_events_and_terminal_state(self) -> None:
+        summary = summarize_trace(
+            [
+                {"event_type": "heartbeat", "payload": {"stage": "intake"}},
+                {"event_type": "stage_started", "payload": {"stage": "intake"}},
+                {"event_type": "stage_finished", "payload": {"next_state": "completed"}},
+            ]
+        )
+
+        self.assertEqual(summary["event_count"], 3)
+        self.assertTrue(summary["has_heartbeat"])
+        self.assertTrue(summary["has_terminal_event"])
+        self.assertEqual(summary["stage_sequence"], ["intake"])
+
     def test_boot_auto_resumes_claimable_repair_queue_item(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
@@ -514,6 +642,93 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertEqual(report["status"], "available")
             self.assertIn("project_standards.md", report["loaded_files"])
             self.assertIn("recent_regression_candidates", report)
+
+    def test_cli_reports_regression_manifest_and_resolves_approval(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as root_dir:
+            memory = RepositoryMemory(Path(root_dir) / "memory")
+            request = memory.create_approval_request(
+                task_id="TASK-CLI-APPROVAL",
+                approval_type="tool_policy",
+                subject="github",
+                reason="approval required",
+                risk_level="high",
+            )
+            memory.append_regression_candidate(
+                task_id="TASK-CLI-REGRESSION",
+                failure_type="code_error",
+                stage="verifying",
+                summary="Regression candidate.",
+                reproduction="Run CLI task.",
+                expected_behavior="No failure.",
+            )
+            boot_path = Path(root_dir) / "boot.json"
+            boot_path.write_text(
+                json.dumps(
+                    {
+                        "task_id": "TASK-TEST-CLI-CONTROL",
+                        "goal": "Report CLI control plane.",
+                        "scope": {"include": [root_dir]},
+                        "acceptance": ["Report control plane."],
+                        "environment": {
+                            "source_path": root_dir,
+                            "repository_root": root_dir,
+                            "repository_memory_path": "memory",
+                            "worktree_root": str(Path(root_dir) / "worktrees"),
+                        },
+                        "policy": {"workflow": "durable_workflow"},
+                        "memory": {
+                            "record_path": str(Path(root_dir) / "records"),
+                            "memory_namespace": "cli-control-namespace",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "loop_engineering.cli",
+                    "--boot",
+                    str(boot_path),
+                    "--skills",
+                    str(repo_root / "loop_registry" / "skills.json"),
+                    "--connectors",
+                    str(repo_root / "loop_registry" / "connectors.json"),
+                    "--regression-manifest",
+                ],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            approval = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "loop_engineering.cli",
+                    "--boot",
+                    str(boot_path),
+                    "--skills",
+                    str(repo_root / "loop_registry" / "skills.json"),
+                    "--connectors",
+                    str(repo_root / "loop_registry" / "connectors.json"),
+                    "--approve-id",
+                    request["approval_id"],
+                    "--resolved-by",
+                    "tester",
+                ],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(manifest.returncode, 0, manifest.stderr)
+            self.assertEqual(json.loads(manifest.stdout)["candidate_count"], 1)
+            self.assertEqual(approval.returncode, 0, approval.stderr)
+            self.assertEqual(json.loads(approval.stdout)["approval_request"]["status"], "approved")
 
 
 if __name__ == "__main__":
