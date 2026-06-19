@@ -59,9 +59,38 @@ memory:
 
 - workflow mode
 - retry limit
+- self repair limit
 - reviewer required
 - verifier required
 - allow subagents
+
+失败处理规则：
+
+- `network_error` / `timeout`：自动 retry，不找用户确认
+- `code_error`：进入 self-repair cycle，回到 planning 重新规划、路由、执行和验证
+- `permission_error` / `auth_error` / `configuration_error` / `requirement_ambiguity`：记录阻塞，不继续乱跑
+- `production_risk`：立即停止并归档 intent debt
+
+超过 `retry_limit` 或 `self_repair_limit` 后，Loop 必须把问题写入 intent debt，不能无限循环。
+
+默认循环预算：
+
+- `retry_limit`: 3
+- `self_repair_limit`: 3
+- 单个 connector 必须有 `connector_timeout_seconds`
+- 长任务必须持续写 heartbeat
+
+Self-repair cycle 必须做完整闭环：
+
+1. 读取 failure history、run summary 和 repository memory
+2. 重新生成 issue plan
+3. 重新路由 skills、connectors、subagents
+4. 在隔离 worktree 执行
+5. 重新运行 review、verification、merge gate
+6. 成功则完成；失败则进入下一轮 self-repair
+7. 超过预算后写 intent debt 和 regression candidate
+
+Loop 不能因为代码失败马上问人；只有权限、认证、生产风险、需求不清、配置缺失才允许阻塞等待人处理。
 
 ### `memory`
 

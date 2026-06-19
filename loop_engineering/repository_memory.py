@@ -43,6 +43,7 @@ Loop standards:
 - Fixed workflow before autonomy.
 - Each step has status, heartbeat, timeout, retry policy, review, and verification.
 - Network failures can retry automatically.
+- Code failures enter self-repair cycles before intent debt.
 - Auth, permission, production config, or unclear requirement failures become blocked intent debt.
 - Writer, reviewer, and verifier gates must remain separate in records.
 - Every action must be written outside conversation memory.

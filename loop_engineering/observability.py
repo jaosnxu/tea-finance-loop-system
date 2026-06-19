@@ -21,6 +21,7 @@ def build_run_report(record: TaskRecord, reports_count: int = 0, trace_count: in
         "workflow_type": record.workflow_type,
         "attempt_count": record.attempt_count,
         "retry_count": record.retry_count,
+        "repair_count": record.repair_count,
         "heartbeat_at": record.heartbeat_at,
         "issue_count": len(record.issue_backlog),
         "active_worktrees": record.active_worktrees,
@@ -53,6 +54,7 @@ def build_run_summary(record: TaskRecord, reports: list[dict] | None = None, tra
         "heartbeat_at": record.heartbeat_at,
         "attempt_count": record.attempt_count,
         "retry_count": record.retry_count,
+        "repair_count": record.repair_count,
         "workflow": {
             "architecture": record.architecture,
             "type": record.workflow_type,
