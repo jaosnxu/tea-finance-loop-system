@@ -74,18 +74,6 @@ Runtime:
 - Local task records: /private/tmp/loop-task-records
 - Local worktrees: /private/tmp/loop-worktrees
 """,
-    "projects/loop-engineering.md": """# Loop Engineering Project Record
-
-Purpose:
-- Reusable development execution system.
-
-Required behavior:
-- File-based skills.
-- File-based connectors.
-- Code-based subagents.
-- Memory spine retrieval and experience reuse.
-- MCP, CLI, GitHub, Figma, Product Design, browser, git, and test connector routing.
-""",
     "projects/default-project.md": """# Project Record
 
 Purpose:
@@ -96,12 +84,6 @@ Current boundary:
 
 Deferred:
 - Fill with explicit non-goals and deferred work.
-""",
-    "backlog/loop-engineering.json": """{
-  "project": "loop-engineering",
-  "updated_at": "2026-06-18",
-  "items": []
-}
 """,
     "backlog/default-project.json": """{
   "project": "default-project",
