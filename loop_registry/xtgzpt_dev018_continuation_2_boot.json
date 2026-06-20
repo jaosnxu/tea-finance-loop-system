@@ -1,0 +1,101 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-018-CONTINUATION-2-CODEX-1",
+  "goal": "Finish xtgzpt DEV-018 production readiness docs in the existing DEV-018 worktree with a compact writer prompt.",
+  "scope": {
+    "include": [
+      "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369"
+    ],
+    "exclude": [
+      "real production writes",
+      "real deployment",
+      "real secrets",
+      "business feature changes",
+      "new top-level menu"
+    ]
+  },
+  "acceptance": [
+    "Executed through codex_executor in the existing isolated DEV-018 worktree.",
+    "Create DEV-018/AUDIT-018 docs and one production readiness runbook/checklist.",
+    "Use placeholders only; commit no secrets or production URLs.",
+    "Record prior DEV-018 writer stalls as Loop executor observations.",
+    "Run git diff --check and document intended gates."
+  ],
+  "environment": {
+    "source_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369",
+    "project_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369",
+    "worktree_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369",
+    "git_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 14,
+    "repository_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-018-CODEX-1/WT-BA65B369",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "DEV-018 only. Edit docs, not product behavior. Read BUSINESS_IMPLEMENTATION_PLAN, PROJECT_CONSTITUTION, TECHNICAL_STANDARD, DEV-017/AUDIT-017. Add docs/dev-log/DEV-018.md, docs/dev-log/AUDIT-018.md, and docs/operations/PRODUCTION_READINESS_RUNBOOK.md. Cover config, GitHub secrets placeholders, DB migration, backup/restore, logs, health, smoke, audit, rollback, release signoff. No real secrets, no deploy, no production writes. Record previous DEV-018 writer stalls. Run git diff --check."
+    ],
+    "git_base_ref": "origin/main",
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      }
+    ],
+    "connector_timeout_seconds": 900
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
