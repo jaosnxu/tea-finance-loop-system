@@ -1,0 +1,153 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-014-CODEX-1",
+  "goal": "Use Loop to execute DEV-014 for xtgzpt: implement the contract closure workflow with upload/paste entry, contract versions, AI structured review, risk list, original text highlights, A/B/C options, human risk confirmation, second review after modification, approval submission boundary, execution tracking, and audit records. Loop must delegate implementation to the Codex writer executor in the isolated Loop worktree, then inspect, run gates, review, verify, and record project memory.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance system behavior",
+      "automatic contract signing",
+      "automatic payment",
+      "procurement system",
+      "inventory system",
+      "full approval engine implementation",
+      "external e-signature services",
+      "external OCR services",
+      "external notifications",
+      "mobile app",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/05_AI_FRAMEWORK_SCHEMAS.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-014 and AUDIT-014 records are written to docs/dev-log.",
+    "Contract entry only supports uploading a contract file or pasting contract text; no complex manual contract archive creation flow is introduced.",
+    "Contracts support versions and keep original text/source evidence without changing original contract language.",
+    "AI structured review returns a risk list, original text highlight references, and A/B/C options, but AI cannot confirm risks, choose an option, submit approval, sign, or execute the contract.",
+    "Human users must confirm contract risks before the workflow can proceed.",
+    "A modified contract version requires a second review before approval submission is allowed.",
+    "Contract approval submission is represented as a bounded handoff/state and audit record; DEV-014 must not implement the full approval engine reserved for DEV-015.",
+    "Contract execution tracking supports reminder/record/status/audit behavior only, with no procurement, inventory, payment, finance, or signature automation.",
+    "All upload, paste, AI review, risk confirmation, modification, second review, approval handoff, execution tracking, permission denial, and state transition actions write audit records.",
+    "Unauthorized users cannot see contract content, risk details, source file names, or AI context for contracts outside their data scope.",
+    "Frontend contract page exposes upload/paste entry, version history, AI review, risk confirmation, second review, approval handoff boundary, execution tracking, and clear empty/loading/no-permission/error states without adding a new top-level menu.",
+    "Desktop browser widths remain usable without text overlap or unusable controls; mobile app is not in scope.",
+    "DEV-014 must not implement automatic signing, automatic payment, procurement, inventory, finance workflows, external OCR, external e-signature, external notifications, deployment, production writes, secrets, or unrelated features.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 8,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-014. Work only in the current working tree. Read the complete project context first: docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/05_AI_FRAMEWORK_SCHEMAS.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records. Complete DEV-014 contract closure. Required outcome: contract entry only supports upload or paste, contracts support versions and original text/source evidence, AI structured review produces risk list, original text highlights and A/B/C options, AI cannot confirm risks or choose an option, human risk confirmation is required, modified contract versions require second review before approval submission, approval submission is only a bounded handoff/state and audit record without implementing the full approval engine, execution tracking is reminder/record/status/audit only, all key actions write audit records, unauthorized users cannot see contract content/risk/source data/AI context, frontend contract page exposes upload/paste entry, version history, AI review, risk confirmation, second review, approval handoff boundary and execution tracking without adding any new top-level menu, DEV-014 and AUDIT-014 logs are written, backlog/status docs are aligned, and all local gates pass. Keep AI human-confirmation boundaries. Do not implement automatic signing, automatic payment, procurement, inventory, finance workflows, full approval engine, external OCR, external e-signature, external notifications, deployment, production writes, secrets, mobile app, new top-level menu, or unrelated features."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}

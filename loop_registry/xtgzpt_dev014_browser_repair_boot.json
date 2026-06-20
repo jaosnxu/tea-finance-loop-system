@@ -1,0 +1,146 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-014-BROWSER-REPAIR-CODEX-1",
+  "goal": "Use Loop to repair the DEV-014 browser regression in xtgzpt contract closure: after creating a contract from the web UI, clicking AI review sends a POST request without a JSON body and receives Bad Request, while service-level smoke passes. Produce the smallest Loop-controlled fix and regression coverage, then rerun gates.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "new DEV phase scope",
+      "finance system behavior",
+      "automatic contract signing",
+      "automatic payment",
+      "procurement system",
+      "inventory system",
+      "full approval engine implementation",
+      "external e-signature services",
+      "external OCR services",
+      "external notifications",
+      "mobile app",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop reads the current DEV-014 branch state from /tmp/xtgzpt-bootstrap/xtgzpt and the project memory index before editing.",
+    "Loop classifies the failure as a browser/UI regression, not a backend contract workflow failure.",
+    "The web UI can create a contract and then run initial AI review without Bad Request.",
+    "The same fix applies to other no-body POST actions used by the web UI, including second review and AI draft generation paths, without weakening API permissions.",
+    "The backend contract boundaries remain unchanged: AI cannot confirm risk, choose an option, submit approval, sign, pay, or execute a contract.",
+    "Regression coverage is added or updated so a browser-style POST without an explicit body no longer silently escapes tests.",
+    "DEV-014 / AUDIT-014 or runtime memory records are updated with the browser regression and repair result.",
+    "No new top-level menu, no procurement, no inventory, no finance workflow, no full approval engine, no external integration, and no unrelated refactor is introduced.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 8,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-014 browser repair. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/05_AI_FRAMEWORK_SCHEMAS.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-014.md, docs/dev-log/AUDIT-014.md, and recent docs/loop/runtime-memory records before editing. Repair this exact browser regression: web UI creates a contract successfully, then clicking AI review POSTs /contracts/:id/ai-review without a JSON body and the browser path gets Bad Request even though smoke:api passes. Make the smallest robust fix for browser-style no-body POST actions, preserve all DEV-014 contract boundaries, add or update regression coverage, update DEV-014/AUDIT-014 or runtime memory with the failure and repair result, and run local gates. Do not implement automatic signing, automatic payment, procurement, inventory, finance workflows, full approval engine, external OCR, external e-signature, external notifications, deployment, production writes, secrets, mobile app, new top-level menu, or unrelated features."
+    ],
+    "git_base_ref": "HEAD",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
