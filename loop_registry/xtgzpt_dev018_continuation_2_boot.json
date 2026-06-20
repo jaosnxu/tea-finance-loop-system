@@ -48,6 +48,11 @@
       "DEV-018 only. Edit docs, not product behavior. Read BUSINESS_IMPLEMENTATION_PLAN, PROJECT_CONSTITUTION, TECHNICAL_STANDARD, DEV-017/AUDIT-017. Add docs/dev-log/DEV-018.md, docs/dev-log/AUDIT-018.md, and docs/operations/PRODUCTION_READINESS_RUNBOOK.md. Cover config, GitHub secrets placeholders, DB migration, backup/restore, logs, health, smoke, audit, rollback, release signoff. No real secrets, no deploy, no production writes. Record previous DEV-018 writer stalls. Run git diff --check."
     ],
     "git_base_ref": "origin/main",
+    "test_command": [
+      "git",
+      "diff",
+      "--check"
+    ],
     "test_suites": [
       {
         "name": "diff-check",
