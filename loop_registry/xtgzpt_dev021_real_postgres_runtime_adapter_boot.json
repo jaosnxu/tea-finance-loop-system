@@ -1,0 +1,208 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-021-CODEX-1",
+  "goal": "Use Loop to execute DEV-021 for xtgzpt: upgrade the DEV-020 PostgreSQL runtime boundary into a real driver-backed PostgreSQL runtime adapter for RuntimeData read/write in test or local substitute environments, while keeping file mode available and without production cutover or production secrets.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes except this boot record",
+      "real production writes",
+      "real deployment",
+      "real production secrets",
+      "real production database credentials",
+      "production cutover",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "mobile app",
+      "external notifications",
+      "new top-level menu",
+      "AI automatic business execution",
+      "UI redesign",
+      "permission policy expansion"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in an isolated Loop worktree.",
+    "Loop loads docs/loop/00_MEMORY_INDEX.md and recent runtime memory before editing.",
+    "Read PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-020.md, docs/dev-log/AUDIT-021.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, apps/api/src/runtime-store.ts, apps/api/src/runtime-store.test.ts, apps/api/src/index.ts, package.json, apps/api/package.json, package-lock.json, and packages/database/migrations before editing.",
+    "Add a PostgreSQL driver dependency and implement driver-backed RuntimeData read/write for XTGZPT_RUNTIME_STORE_MODE=postgres.",
+    "PostgreSQL adapter must initialize the runtime document when missing, read RuntimeData from PostgreSQL, write RuntimeData to PostgreSQL, and fail loudly on write/read errors instead of silently falling back to file or memory.",
+    "Add checksum or version/updated_at conditional update protection so concurrent writes cannot silently overwrite a newer runtime document.",
+    "Keep test default as memory and keep file mode fully available for local development.",
+    "Do not hardcode production hosts, usernames, passwords, tokens, database URLs, or secrets.",
+    "Do not execute real production writes, real production deployment, or production cutover.",
+    "Add focused tests for PostgreSQL config resolution, query adapter behavior with a mocked/substitute client, missing-document initialization, successful save, stale version conflict, and safe failure.",
+    "Update migration, backfill, rollback, backup/restore and cutover documentation for file runtime to PostgreSQL runtime.",
+    "Update README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and docs/operations/PRODUCTION_READINESS_RUNBOOK.md to reflect DEV-021 status accurately.",
+    "Create docs/dev-log/DEV-021.md and docs/dev-log/AUDIT-021-DEV.md with scope, evidence, verification, non-goals, residual release limits, and next recommended stage.",
+    "Update docs/loop/runtime-memory/current_status.json, project_status.md, action_log.jsonl, run_history.jsonl, and a TASK-XTGZPT-DEV-021-CODEX-1 run summary.",
+    "Run git diff --check, JSON/JSONL parse checks for runtime-memory files, npm ci, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, and npm audit --audit-level=low.",
+    "If any gate fails, classify and repair through Loop policy; if unresolved after repair limit, record intent debt and do not mark complete."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 20,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-021. Work only in the current working tree. This is a controlled persistence implementation task, not a product-scope expansion. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-020.md, docs/dev-log/AUDIT-021.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, apps/api/src/runtime-store.ts, apps/api/src/runtime-store.test.ts, apps/api/src/index.ts, package.json, apps/api/package.json, package-lock.json and packages/database/migrations before editing. Goal: implement DEV-021 real driver-backed PostgreSQL runtime adapter for RuntimeData read/write in test or local substitute environments. Keep test default memory and file mode available. Add a PostgreSQL driver dependency if required. The adapter must initialize a missing runtime document, load RuntimeData, persist RuntimeData, and fail loudly on read/write errors. Add checksum or version/updated_at conditional update protection to avoid silent concurrent overwrite. Do not hardcode production credentials, perform production writes, deploy, cut over production, redesign UI, add menus, expand product scope, or change AI/permission boundaries. Add focused tests using mocked/substitute PostgreSQL client behavior. Update migration/backfill/rollback/backup/restore/cutover docs, DEV-021/AUDIT-021-DEV logs, runtime memory and run summary. Run git diff --check, JSON/JSONL parse checks, npm ci, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api and npm audit --audit-level=low."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "current-status-json-parse",
+        "command": [
+          "python3",
+          "-m",
+          "json.tool",
+          "docs/loop/runtime-memory/current_status.json"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "run-summary-json-parse",
+        "command": [
+          "python3",
+          "-m",
+          "json.tool",
+          "docs/loop/runtime-memory/runs/TASK-XTGZPT-DEV-021-CODEX-1.json"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "runtime-memory-jsonl-parse",
+        "command": [
+          "python3",
+          "-c",
+          "import json, pathlib\nfor p in [pathlib.Path('docs/loop/runtime-memory/action_log.jsonl'), pathlib.Path('docs/loop/runtime-memory/run_history.jsonl')]:\n    for i, line in enumerate(p.read_text().splitlines(), 1):\n        if line.strip():\n            json.loads(line)\nprint('jsonl ok')"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 2400
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
