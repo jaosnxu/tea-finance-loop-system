@@ -392,6 +392,11 @@ class LoopRuntimeTests(unittest.TestCase):
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
             subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.email", "loop-test@example.com"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.name", "Loop Test"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            Path(git_repo_dir, "README.md").write_text("# Test\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "commit", "-m", "Initial"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
             payload = BootPayload(
                 task_id="TASK-TEST-0004",
                 goal="Run git, cli, test, and mcp connectors for verification.",
@@ -454,7 +459,11 @@ class LoopRuntimeTests(unittest.TestCase):
                     "source_path": str(git_repo_dir),
                     "worktree_root": worktrees_dir,
                     "available_connectors": ["codex_executor", "git"],
-                    "codex_command": ["python3", "-c", "print('loop-codex-ok')"],
+                    "codex_command": [
+                        "python3",
+                        "-c",
+                        "from pathlib import Path; Path('codex-output.txt').write_text('generated', encoding='utf-8')",
+                    ],
                     "git_base_ref": "HEAD",
                 },
                 policy={
@@ -494,9 +503,64 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual([name for name, _ in seen_calls], ["codex_executor", "git"])
             for _, connector_payload in seen_calls:
                 self.assertEqual(connector_payload["worktree_path"], runtime.context.primary_worktree.path)
-                self.assertEqual(connector_payload["git_path"], str(git_repo_dir))
+                self.assertEqual(connector_payload["git_path"], runtime.context.primary_worktree.path)
                 self.assertEqual(connector_payload["codex_path"], runtime.context.primary_worktree.path)
                 self.assertNotEqual(connector_payload["codex_path"], str(git_repo_dir))
+
+    def test_runtime_git_connector_inspects_codex_worktree_diff(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
+            subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.email", "loop-test@example.com"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.name", "Loop Test"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            Path(git_repo_dir, "README.md").write_text("# Test\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "commit", "-m", "Initial"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            payload = BootPayload(
+                task_id="TASK-TEST-CODEX-GIT-DIFF",
+                goal="Execute Codex and inspect generated diff in isolated worktree.",
+                scope={"include": [str(git_repo_dir)]},
+                acceptance=["Generated diff is visible to git connector."],
+                environment={
+                    "source_path": str(git_repo_dir),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["codex_executor", "git"],
+                    "codex_command": [
+                        "python3",
+                        "-c",
+                        "from pathlib import Path; Path('codex-output.txt').write_text('generated', encoding='utf-8')",
+                    ],
+                    "git_base_ref": "HEAD",
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "codex-git-diff"},
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.context.task_record.current_stage = "executing"
+            runtime.context.memory.task_memory["selected_connectors"] = ["git", "codex_executor"]
+
+            result = runtime.step()
+
+            self.assertEqual(result.status, "done")
+            self.assertFalse(Path(git_repo_dir, "codex-output.txt").exists())
+            self.assertTrue(Path(runtime.context.primary_worktree.path, "codex-output.txt").exists())
+            artifact_values = {
+                artifact["type"]: artifact["value"]
+                for artifact in runtime.context.task_record.artifacts
+                if artifact.get("type") in {"vcs_changed_files", "vcs_commit_plan"}
+            }
+            self.assertIn("codex-output.txt", artifact_values["vcs_changed_files"])
+            self.assertTrue(artifact_values["vcs_commit_plan"]["can_commit"])
 
     def test_runtime_can_resume_existing_durable_state(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
