@@ -89,6 +89,7 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertFalse((Path(root_dir) / "memory" / "projects" / "loop-engineering.md").exists())
             self.assertTrue((Path(root_dir) / "memory" / "experience" / "successes.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "intent_debt.jsonl").exists())
+            self.assertTrue((Path(root_dir) / "memory" / "issues" / "loop-system-issues.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "repair_queue.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "approval_requests.jsonl").exists())
             self.assertTrue((Path(root_dir) / "memory" / "regression_candidates.jsonl").exists())
@@ -96,10 +97,37 @@ class RepositoryMemoryTests(unittest.TestCase):
             self.assertTrue((Path(root_dir) / "memory" / "current_status.json").exists())
             self.assertIn("project_standards.md", snapshot["files"])
             self.assertIn("verification/regression_policy.md", snapshot["files"])
+            self.assertIn("issues/README.md", snapshot["files"])
             self.assertIn("backlog/default-project.json", snapshot["files"])
             self.assertNotIn("backlog/tea-finance-system.json", snapshot["files"])
             self.assertNotIn("backlog/loop-engineering.json", snapshot["files"])
             self.assertEqual(snapshot["recent_actions"], [])
+
+    def test_repository_memory_records_and_searches_issues(self) -> None:
+        with tempfile.TemporaryDirectory() as root_dir:
+            memory = RepositoryMemory(Path(root_dir) / "memory")
+            memory.append_issue(
+                issue_id="LOOP-ISSUE-TEST",
+                project="loop-engineering",
+                severity="high",
+                status="open",
+                situation="CI exposed an issue.",
+                symptom="Remote check failed.",
+                cause="Path was not portable.",
+                impact="Merge gate blocked.",
+                action_taken="Recorded issue.",
+                next_step="Add regression test.",
+                related_task_id="TASK-TEST",
+                related_pr="https://example.com/pr/1",
+                related_check="Loop runtime tests",
+                regression_test="python3 -m unittest discover -s tests -v",
+            )
+            issues = memory.search_issues(status="open", severity="high", project="loop-engineering")
+            snapshot = memory.read_required_context()
+
+            self.assertEqual(issues[-1]["issue_id"], "LOOP-ISSUE-TEST")
+            self.assertEqual(issues[-1]["cause"], "Path was not portable.")
+            self.assertTrue(snapshot["recent_issues"])
 
     def test_runtime_loads_repository_memory_and_records_actions(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
@@ -645,7 +673,86 @@ class RepositoryMemoryTests(unittest.TestCase):
             report = json.loads(completed.stdout)
             self.assertEqual(report["status"], "available")
             self.assertIn("project_standards.md", report["loaded_files"])
+            self.assertIn("recent_issues", report)
             self.assertIn("recent_regression_candidates", report)
+
+    def test_cli_records_and_reports_issues(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as root_dir:
+            boot_path = Path(root_dir) / "boot.json"
+            boot_payload = {
+                "task_id": "TASK-TEST-ISSUE-CLI",
+                "goal": "Record issue.",
+                "scope": {"include": [root_dir]},
+                "acceptance": ["Record issue."],
+                "environment": {
+                    "source_path": root_dir,
+                    "repository_root": root_dir,
+                    "repository_memory_path": "memory",
+                    "worktree_root": str(Path(root_dir) / "worktrees"),
+                },
+                "policy": {"workflow": "durable_workflow"},
+                "memory": {
+                    "record_path": str(Path(root_dir) / "records"),
+                    "memory_namespace": "issue-cli-namespace",
+                },
+            }
+            boot_path.write_text(json.dumps(boot_payload), encoding="utf-8")
+            record = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "loop_engineering.cli",
+                    "--boot",
+                    str(boot_path),
+                    "--skills",
+                    str(repo_root / "loop_registry" / "skills.json"),
+                    "--connectors",
+                    str(repo_root / "loop_registry" / "connectors.json"),
+                    "--record-issue",
+                    "--issue-id",
+                    "LOOP-ISSUE-CLI",
+                    "--issue-situation",
+                    "Test situation",
+                    "--issue-symptom",
+                    "Test symptom",
+                    "--issue-cause",
+                    "Test cause",
+                    "--issue-impact",
+                    "Test impact",
+                    "--issue-action",
+                    "Test action",
+                    "--issue-next-step",
+                    "Test next step",
+                ],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            report = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "loop_engineering.cli",
+                    "--boot",
+                    str(boot_path),
+                    "--skills",
+                    str(repo_root / "loop_registry" / "skills.json"),
+                    "--connectors",
+                    str(repo_root / "loop_registry" / "connectors.json"),
+                    "--issues-report",
+                ],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(record.returncode, 0, record.stderr)
+            self.assertEqual(report.returncode, 0, report.stderr)
+            payload = json.loads(report.stdout)
+            self.assertEqual(payload["issues"][-1]["issue_id"], "LOOP-ISSUE-CLI")
 
     def test_cli_reports_regression_manifest_and_resolves_approval(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

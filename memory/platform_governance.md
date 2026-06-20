@@ -2,11 +2,11 @@
 
 GitHub repository:
 - `jaosnxu/tea-finance-loop-system`
+- Visibility: public
 
 Protected branch target:
 - `main`
-- Status: blocked by GitHub plan for private repository.
-- GitHub API response: branch protection requires GitHub Pro or a public repository.
+- Status: enabled.
 
 Required checks:
 - `lint`
@@ -14,7 +14,7 @@ Required checks:
 - `test`
 - `build-smoke`
 - `audit`
-- Status: policy-as-code committed in `.github/branch-protection-main.json` and aligned with `.github/workflows/ci.yml`.
+- Status: enforced by GitHub branch protection, committed in `.github/branch-protection-main.json`, and aligned with `.github/workflows/ci.yml`.
 
 Production environment:
 - `production`
@@ -38,5 +38,4 @@ Pending real values:
 - Production OCR/model provider credentials, if used.
 
 Platform blockers:
-- Enable GitHub Pro/Team branch protection for private repo, or make the repo public, then apply `.github/branch-protection-main.json`.
 - Provide real production secret values before production deployment automation can run.
