@@ -1,0 +1,180 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-018-CODEX-1",
+  "goal": "Use Loop to execute DEV-018 for xtgzpt: production launch readiness. Prepare first-release production gates, configuration templates, secrets boundaries, backup/restore procedure, logging/health/smoke checks, rollback plan, operations runbook, and final readiness documentation without writing real production secrets or touching production systems.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "real production writes",
+      "real deployment",
+      "real secrets",
+      "real production database connection strings",
+      "real JWT secrets",
+      "real ARK_API_KEY values",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "new product features",
+      "external notification services",
+      "mobile app",
+      "new top-level menu",
+      "AI automatic business execution",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in an isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/00_DEV_READINESS_OVERVIEW.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-017.md, docs/dev-log/AUDIT-017.md, and recent docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-018 and AUDIT-018 records are written to docs/dev-log.",
+    "Production launch readiness is documented with a concrete checklist covering configuration, GitHub Secrets, database migration, backup, restore, logging, health checks, smoke tests, audit/security checks, rollback, and operations handoff.",
+    "A safe env template is present or updated with placeholders only; no real secret, API key, production database URL, JWT secret, private key, or credential is committed.",
+    "If scripts are added, they must be dry-run safe by default and must not write to production unless explicitly configured outside the repository.",
+    "Production smoke test entrypoints must be documented and executable against a supplied base URL without hardcoded production hosts or secrets.",
+    "Backup and restore procedure must be concrete enough for PostgreSQL-compatible deployment, but must use placeholders and instructions rather than real credentials.",
+    "Rollback strategy must cover code rollback, database migration rollback policy, environment/secrets rollback, and smoke re-check.",
+    "Security audit must include repository secret scan expectations and dependency audit expectations.",
+    "Current project constitution/business plan status must be updated if stale statements contradict completed DEV-016/DEV-017 reality.",
+    "Do not add finance, procurement, inventory, ERP, mobile app, external notifications, production deployment, real secrets, or production writes.",
+    "Loop runs xtgzpt gates: git diff --check, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, npm audit --audit-level=low.",
+    "If any gate fails, classify the failure, retry or repair according to Loop policy, and write intent debt or repair queue if unresolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 14,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-018. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/00_DEV_READINESS_OVERVIEW.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-017.md, docs/dev-log/AUDIT-017.md, and recent docs/loop/runtime-memory records before editing. Complete DEV-018 production launch readiness. Required outcome: concrete production readiness docs/checklists and safe repo assets for configuration templates, GitHub Secrets boundaries, PostgreSQL-compatible migration/backup/restore procedure, logging and health check expectations, production smoke test procedure, security audit expectations, rollback strategy, operations handoff, and final DEV-018/AUDIT-018 records. If useful, add dry-run safe scripts that require caller-provided base URLs or env vars and never hardcode production hosts or real secrets. Update stale project status docs if they contradict completed DEV-016/DEV-017. Do not commit real secrets, ARK_API_KEY, production DB URL, JWT secret, private keys, real credentials, production writes, or deployment actions. Do not implement finance, procurement, inventory, ERP, mobile app, external notifications, new product features, or new top-level menus. Run git diff --check at minimum and document all intended gates."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 2400
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
