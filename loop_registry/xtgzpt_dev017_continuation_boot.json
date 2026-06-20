@@ -1,0 +1,172 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-017-CONTINUATION-CODEX-1",
+  "goal": "Continue DEV-017 in the existing DEV-017 worktree after the first writer produced no diff. Implement the responsive UI/UX and page-state acceptance work with a narrow frontend/documentation scope, then run gates.",
+  "scope": {
+    "include": [
+      "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42"
+    ],
+    "exclude": [
+      "new backend business modules",
+      "database schema changes unless unavoidable",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "external agents",
+      "external vector database",
+      "external notifications",
+      "mobile app",
+      "new top-level menu",
+      "production writes",
+      "deployment",
+      "secrets"
+    ]
+  },
+  "acceptance": [
+    "Continuation is executed through the codex_executor connector in the existing DEV-017 isolated worktree, not by manual chat edits.",
+    "Work is limited to frontend UI/CSS, focused UI state tests if practical, DEV-017/AUDIT-017 docs, and runtime memory.",
+    "Dashboard, Workbench, Projects, Tasks, Chat, Knowledge, Contracts, Approvals, System Settings, and Login remain usable at 1440/1280/960 desktop widths.",
+    "Long Russian-like text, badges, cards, toolbar controls, side navigation, evidence panels, and dense lists wrap or truncate predictably without overlap.",
+    "State surfaces for normal, empty, loading, no-permission, error, AI-generating, AI-failed, expired/archived are visually consistent where applicable.",
+    "No new top-level menu is added and no existing business permission rule is weakened.",
+    "AI human-boundary rules remain intact.",
+    "Run and pass git diff --check, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, and npm audit --audit-level=low.",
+    "If any gate fails, classify the failure and repair according to Loop policy."
+  ],
+  "environment": {
+    "source_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42",
+    "project_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42",
+    "worktree_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42",
+    "git_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 14,
+    "repository_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-017-CODEX-1/WT-5F072A42",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop continuation writer for xtgzpt DEV-017. Work only in the current working tree. Do not restart the feature or expand business scope. First inspect apps/web/src/ui/App.tsx and apps/web/src/styles.css, plus docs/dev-readiness/07_PAGE_STATES_AND_RESPONSIVE.md and docs/dev-log/DEV-016.md. Implement a narrow production UI/UX responsive pass: improve 1440/1280/960 layout constraints, Russian-length text wrapping/truncation, stable toolbar/card/list dimensions, and consistent state surfaces for normal/empty/loading/no-permission/error/AI-generating/AI-failed/expired/archived. Core pages: Dashboard, Workbench, Projects, Tasks, Chat, Knowledge, Contracts, Approvals, System Settings, Login. Prefer CSS and existing component refinements; avoid backend changes unless a focused state contract test requires a tiny shared type update. Do not add a new top-level menu. Keep AI Frameworks/AI Runs inside existing System Settings/source-object surfaces. Keep AI unable to approve, reject, return, transfer, add-sign, publish knowledge, create official tasks, sign, pay, or confirm execution. Write docs/dev-log/DEV-017.md, docs/dev-log/AUDIT-017.md, and runtime memory. Run git diff --check at minimum and document intended gates. Do not implement finance, procurement, inventory, ERP, external agents, external vector DB, external notifications, mobile app, deployment, secrets, or production writes."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 1200
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
