@@ -1,0 +1,176 @@
+{
+  "task_id": "TASK-XTGZPT-AUDIT-021-CODEX-1",
+  "goal": "Use Loop to execute AUDIT-021 for xtgzpt: perform a project-level state and production-readiness audit after DEV-020. Confirm whether project goals, boundaries, technical standards, runtime memory, dev/audit logs, required checks, review gates, permission boundaries, AI boundaries, database/runtime persistence status, and the next-stage priority are consistent before any DEV-021 feature implementation.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes except this boot record",
+      "business feature implementation",
+      "source code behavior changes",
+      "API endpoint changes",
+      "database schema changes",
+      "UI changes",
+      "menu changes",
+      "permission policy changes",
+      "AI execution boundary changes",
+      "real production writes",
+      "real deployment",
+      "real production secrets",
+      "real production database credentials",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "mobile app",
+      "external notifications"
+    ]
+  },
+  "acceptance": [
+    "Audit is executed through the codex_executor connector in an isolated Loop worktree.",
+    "Loop loads docs/loop/00_MEMORY_INDEX.md and recent runtime memory before editing.",
+    "Read PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, docs/dev-log/DEV-001.md through docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-001.md through docs/dev-log/AUDIT-020.md when present, and docs/loop/runtime-memory.",
+    "Create docs/dev-log/AUDIT-021.md with findings ordered by severity, evidence, residual risks, and a clear next-step recommendation.",
+    "If records are stale or inconsistent, correct only documentation/runtime-memory files required to make the project state truthful.",
+    "Do not modify application source code, API behavior, database schema, frontend UI, menus, permissions, AI behavior, package dependencies, production secrets, or deployment settings.",
+    "Confirm whether DEV-021 should be real PostgreSQL runtime adapter implementation, or identify a higher-priority prerequisite if the audit proves otherwise.",
+    "Update docs/loop/runtime-memory/current_status.json, project_status.md, action_log.jsonl, run_history.jsonl, and a TASK-XTGZPT-AUDIT-021-CODEX-1 run summary.",
+    "Run git diff --check, JSON/JSONL parse checks for runtime-memory files, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, and npm audit --audit-level=low.",
+    "If any gate fails, classify and repair through Loop policy; if unresolved after repair limit, record intent debt and do not mark complete."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 20,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt AUDIT-021. Work only in the current working tree. This is an audit and state-correction task, not feature development. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, docs/dev-log/DEV-001.md through docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-001.md through docs/dev-log/AUDIT-020.md when present, and docs/loop/runtime-memory. Goal: perform project-level state and production-readiness audit after DEV-020. Create docs/dev-log/AUDIT-021.md with severity-ordered findings, evidence, residual risks and next-stage recommendation. If project records are stale or inconsistent, update only documentation/runtime-memory files needed to make the state truthful. Do not modify application source code, API behavior, database schema, frontend UI, menus, permissions, AI behavior, package dependencies, production secrets or deployment settings. Confirm whether DEV-021 should be real PostgreSQL runtime adapter implementation or identify a higher-priority prerequisite. Update runtime memory current_status, project_status, action_log, run_history and a TASK-XTGZPT-AUDIT-021-CODEX-1 run summary. Run git diff --check, JSON/JSONL parse checks, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api and npm audit --audit-level=low."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 2400
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
