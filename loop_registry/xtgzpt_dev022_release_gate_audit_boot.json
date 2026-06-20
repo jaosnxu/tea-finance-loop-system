@@ -22,6 +22,31 @@
       "AI automatic business execution",
       "UI redesign",
       "permission policy expansion"
+    ],
+    "write_allowlist": [
+      "README.md",
+      "docs/PROJECT_CONSTITUTION.md",
+      "docs/TECHNICAL_STANDARD.md",
+      "docs/BUSINESS_IMPLEMENTATION_PLAN.md",
+      "docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md",
+      "docs/dev-log/DEV-022.md",
+      "docs/dev-log/AUDIT-022.md",
+      "docs/operations/PRODUCTION_READINESS_RUNBOOK.md",
+      "docs/loop/runtime-memory/current_status.json",
+      "docs/loop/runtime-memory/project_status.md",
+      "docs/loop/runtime-memory/action_log.jsonl",
+      "docs/loop/runtime-memory/run_history.jsonl",
+      "docs/loop/runtime-memory/runs/TASK-XTGZPT-DEV-022-CODEX-1.json"
+    ],
+    "write_forbidden": [
+      "apps/**",
+      "packages/**",
+      "package.json",
+      "package-lock.json",
+      ".github/workflows/**",
+      "database schema or migration files",
+      "deployment or production configuration files",
+      "application runtime behavior"
     ]
   },
   "acceptance": [
@@ -32,13 +57,14 @@
     "Do not connect to or write to a real production database.",
     "Do not add, print, commit, or infer real production secrets.",
     "Do not deploy or cut over production.",
+    "Treat DEV-022 as a documentation and runtime-memory release gate audit only. Do not edit target application source, package manifests, lockfiles, database schemas, migrations, CI workflows, deployment configuration, or runtime behavior; record those gaps as blockers or intent debt instead.",
     "Create docs/dev-log/DEV-022.md with scope, release gates, evidence, findings, blockers, verification, non-goals, and next recommended action.",
     "Create docs/dev-log/AUDIT-022.md with explicit audit conclusion: ready for future signed cutover, blocked, or conditionally ready, with evidence-backed reasons.",
     "Update docs/operations/PRODUCTION_READINESS_RUNBOOK.md with any missing checklist details for PostgreSQL runtime cutover, backup, restore, rollback, smoke, and signoff.",
     "Update README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, and docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md to reflect DEV-022 accurately without claiming production cutover is complete.",
     "Update docs/loop/runtime-memory/current_status.json, project_status.md, action_log.jsonl, run_history.jsonl, and a TASK-XTGZPT-DEV-022-CODEX-1 run summary.",
     "Run git diff --check, JSON/JSONL parse checks for runtime-memory files, npm ci, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, and npm audit --audit-level=low.",
-    "If any gate fails, classify and repair through Loop policy; if unresolved after repair limit, record intent debt and do not mark complete."
+    "If any gate fails, classify it and repair only documentation or runtime-memory inaccuracies inside the write allowlist; if repair would require source, package, schema, migration, CI, deployment, or runtime behavior changes, record the blocker or intent debt and do not mark complete."
   ],
   "environment": {
     "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
@@ -63,7 +89,7 @@
       "--skip-git-repo-check",
       "--sandbox",
       "workspace-write",
-      "You are the Loop writer executor for xtgzpt DEV-022. Work only in the current working tree. This is a release gate and production cutover audit task, not production cutover and not product-scope expansion. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-020.md, docs/dev-log/AUDIT-021.md, docs/dev-log/DEV-021.md, docs/dev-log/AUDIT-021-DEV.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, apps/api/src/runtime-store.ts, apps/api/src/runtime-store.test.ts, apps/api/src/index.ts, package.json, apps/api/package.json, package-lock.json, .env.example, .github/workflows and packages/database/migrations before editing. Goal: audit release readiness after DEV-021 and close documentation gaps for PostgreSQL runtime production cutover. Verify runtime adapter readiness, environment configuration, secret handling, branch protection, required checks, backup and restore plan, smoke plan, rollback plan and signoff requirements. Do not connect to or write to a real production database. Do not add, print, commit or infer real production secrets. Do not deploy or cut over production. Create docs/dev-log/DEV-022.md and docs/dev-log/AUDIT-022.md with evidence-backed conclusion. Update runbook, README, constitution, technical standard, business implementation plan, backlog and runtime memory without claiming production cutover is complete. Run git diff --check, JSON/JSONL parse checks, npm ci, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api and npm audit --audit-level=low."
+      "You are the Loop writer executor for xtgzpt DEV-022. Work only in the current working tree. This is a release gate and production cutover audit task, not production cutover, not implementation, and not product-scope expansion. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-020.md, docs/dev-log/AUDIT-020.md, docs/dev-log/AUDIT-021.md, docs/dev-log/DEV-021.md, docs/dev-log/AUDIT-021-DEV.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, apps/api/src/runtime-store.ts, apps/api/src/runtime-store.test.ts, apps/api/src/index.ts, package.json, apps/api/package.json, package-lock.json, .env.example, .github/workflows and packages/database/migrations before editing. Goal: audit release readiness after DEV-021 and close documentation gaps for PostgreSQL runtime production cutover. Write scope is limited to README.md, named docs files, docs/dev-log/DEV-022.md, docs/dev-log/AUDIT-022.md, docs/operations/PRODUCTION_READINESS_RUNBOOK.md, and docs/loop/runtime-memory files named in this boot record. Do not edit apps/**, packages/**, package manifests, lockfiles, database schemas, migrations, CI workflows, deployment configuration, or application runtime behavior. If a failed gate or readiness gap would require those forbidden changes, record it as a blocker or intent debt instead of repairing it. Verify runtime adapter readiness, environment configuration, secret handling, branch protection, required checks, backup and restore plan, smoke plan, rollback plan and signoff requirements. Do not connect to or write to a real production database. Do not add, print, commit or infer real production secrets. Do not deploy or cut over production. Create docs/dev-log/DEV-022.md and docs/dev-log/AUDIT-022.md with evidence-backed conclusion. Update runbook, README, constitution, technical standard, business implementation plan, backlog and runtime memory without claiming production cutover is complete. Run git diff --check, JSON/JSONL parse checks, npm ci, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api and npm audit --audit-level=low."
     ],
     "git_base_ref": "origin/main",
     "test_setup_command": [
