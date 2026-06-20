@@ -1,0 +1,148 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-013-CODEX-1",
+  "goal": "Use Loop to execute DEV-013 for xtgzpt: productionize the knowledge base with review workflow, versioning, publish/reject/archive states, answer source evidence, permission filtering, and search strategy. Loop must delegate implementation to the Codex writer executor in the isolated Loop worktree, then inspect, run gates, review, verify, and record project memory.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance-specific assumptions",
+      "manual project edits outside Loop",
+      "full approval workflow",
+      "full contract workflow",
+      "external vector database integration",
+      "external search service integration",
+      "external notifications",
+      "mobile app"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-013 and AUDIT-013 records are written to docs/dev-log.",
+    "Knowledge items support production statuses for draft, submitted for review, published, rejected, and archived.",
+    "Knowledge administrators must review before publication; AI cannot automatically publish knowledge.",
+    "Knowledge versions are recorded with author, reviewer where applicable, version number, status, timestamps, and source evidence.",
+    "Publish, reject, archive, and version creation actions write audit records.",
+    "Knowledge question answering returns source evidence for every answer result.",
+    "Unauthorized knowledge or memory sources do not enter retrieval, answer evidence, or AI input context.",
+    "Knowledge query/search remains local and testable in this phase; document the chosen full-text/vector strategy without integrating external search services.",
+    "Frontend knowledge pages expose review queue, version history, source evidence, publish/reject/archive controls, and clear empty/loading/no-permission/error/archived states without adding a new top-level menu.",
+    "Computer desktop widths remain usable without text overlap or unusable controls; mobile app is not in scope.",
+    "DEV-013 must not implement full approval flow, full contract flow, external vector database, external search service, deployment, production writes, secrets, finance modules, external notifications, or unrelated features.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 8,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-013. Work only in the current working tree. Read the complete project context first: docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records. Complete DEV-013 knowledge base productionization. Required outcome: knowledge items support draft/submitted_for_review/published/rejected/archived statuses, knowledge administrators must review before publication, AI cannot automatically publish knowledge, knowledge versions are recorded with author/reviewer/version/status/timestamps/source evidence, publish/reject/archive/version actions write audit logs, knowledge Q&A returns source evidence for every answer result, unauthorized sources do not enter retrieval/evidence/AI input context, search remains local and testable with documented full-text/vector strategy and no external search integration, frontend knowledge pages expose review queue/version history/source evidence/publish/reject/archive controls and states, DEV-013 and AUDIT-013 logs are written, backlog/status docs are aligned, and all local gates pass. Keep AI human-confirmation boundaries. Do not implement full approval flow, full contract flow, external vector database, external search service, deployment, production writes, secrets, finance modules, external notifications, mobile app, or unrelated features."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
