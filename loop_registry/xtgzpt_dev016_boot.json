@@ -1,0 +1,183 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-016-CODEX-1",
+  "goal": "Use Loop to execute DEV-016 for xtgzpt: AI Framework Center and AI Run productionization. Build governable AI framework/version/run records for existing AI draft, knowledge, and contract-review flows, with input/output snapshots, source evidence, adoption/rejection/change records, failure classification, retry policy metadata, audit records, permissions, tests, and documentation. Loop must run autonomously without asking the user between stages while useful output remains possible.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "external agent automation",
+      "external vector database",
+      "external notification services",
+      "mobile app",
+      "new top-level menu",
+      "AI automatic business execution",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in an isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-015.md, docs/dev-log/AUDIT-015.md, and recent docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-016 and AUDIT-016 records are written to docs/dev-log.",
+    "AI Framework records exist for current AI scenarios without adding a new top-level AI menu; configuration must live under existing System Settings for authorized admins.",
+    "AI Framework Version records include stable output schema metadata, prompt/policy notes, provider metadata, status, created time, and changelog or reason.",
+    "AI Run records are created for existing AI-producing flows: chat summarize, chat task draft, chat knowledge draft, knowledge query where AI/provider is involved, and contract AI review.",
+    "Each AI Run records framework id/version, scenario, actor user, organization, source object type/id, source ids, input snapshot reference, output snapshot reference, context source ids, status, failure class, created/completed timestamps, and whether the result is draft/suggestion only.",
+    "Input and output snapshots are stored as structured runtime records or compatible database assets; sensitive source content must remain permission-scoped and never leak through unauthorized APIs.",
+    "AI draft confirmation, knowledge publish/reject/archive, and contract risk confirmation record adoption, rejection, or modification evidence linked back to the originating AI Run where applicable.",
+    "AI failures are classified into at least missing_key_or_template_fallback, provider_error, permission_denied, validation_error, and unknown; failures write audit records.",
+    "Retry policy metadata is explicit, but DEV-016 must not build autonomous business-execution retries; retries must stay bounded and auditable.",
+    "Backend permissions enforce AI framework configuration access and AI run read access; normal users cannot read unrelated AI runs or snapshots.",
+    "AI remains unable to approve, reject, return, transfer, add-sign, publish knowledge, create official tasks, sign, pay, or confirm execution without human confirmation.",
+    "Frontend uses existing menus only. If UI is added, it must appear under System Settings for admins or inside existing source-object detail views for AI evidence; no new top-level menu is allowed.",
+    "PostgreSQL-compatible migration assets are added for AI framework, AI framework versions, AI runs, AI snapshots, and AI adoption records.",
+    "Workbench and existing source detail views may show AI evidence links only where the current user has permission.",
+    "Loop continues automatically across implementation, repair, review, verification, PR preparation, and next useful execution planning; do not ask the user for per-stage confirmation unless blocked by missing credentials, missing secrets, production risk, destructive operation, or contradictory requirements.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api, npm audit --audit-level=low, and git diff --check where available.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 12,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-016. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-015.md, docs/dev-log/AUDIT-015.md, and recent docs/loop/runtime-memory records before editing. Complete DEV-016 AI Framework Center and AI Run productionization. Required outcome: AI Framework, Framework Version, AI Run, input/output snapshots, source evidence linkage, adoption/rejection/change records, failure classification, retry policy metadata, AI framework configuration permissions, AI run read permissions, PostgreSQL-compatible migrations, tests, smoke coverage, frontend evidence/config surfaces only inside existing menus, and DEV-016/AUDIT-016 docs plus runtime memory. Keep AI human-boundary rules: AI cannot approve, reject, return, transfer, add-sign, publish knowledge, create official tasks, sign, pay, or confirm execution without human confirmation. Do not implement finance, procurement, inventory, ERP, external agents, external vector DB, external notifications, mobile app, production writes, deployment, secrets, or any new top-level menu."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 2400
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}

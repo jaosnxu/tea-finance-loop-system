@@ -1,0 +1,115 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-016-VERIFICATION-DOC-REPAIR-CODEX-1",
+  "goal": "Use Loop to update DEV-016 verification documentation in the existing DEV-016 worktree after external verifier gates passed. Do not change product behavior. The external verifier ran git diff --check, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, npm audit --audit-level=low, and Browser DOM verification of System Settings AI Frameworks. Update DEV-016/AUDIT-016 and runtime memory to reflect the real verification status.",
+  "scope": {
+    "include": [
+      "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9"
+    ],
+    "exclude": [
+      "source code behavior changes",
+      "new business features",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "external agents",
+      "external vector database",
+      "external notifications",
+      "mobile app",
+      "new top-level menu",
+      "production writes",
+      "deployment",
+      "secrets"
+    ]
+  },
+  "acceptance": [
+    "Repair is executed through the codex_executor connector in the existing DEV-016 isolated worktree, not by manual chat edits.",
+    "Only DEV-016/AUDIT-016 and directly related runtime memory verification notes are updated.",
+    "Document that git diff --check, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, and npm audit --audit-level=low all passed after the test repair.",
+    "Document that Browser DOM verification passed on http://127.0.0.1:3014 with 1440 viewport: admin login succeeded, System Settings displayed seed-dev-016, AI Framework list stayed inside the existing System Settings menu, and no new top-level AI menu appeared.",
+    "Document that screenshot capture timed out in Browser CDP, but DOM snapshot verification succeeded.",
+    "Do not edit source files unless a documentation import or markdown lint issue directly requires it."
+  ],
+  "environment": {
+    "source_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9",
+    "project_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9",
+    "worktree_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9",
+    "git_path": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 12,
+    "repository_root": "/private/tmp/loop-worktrees/TASK-XTGZPT-DEV-016-CODEX-1/WT-7F6D22F9",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop documentation repair writer for xtgzpt DEV-016. Work only in the current working tree. Do not change product behavior. Read docs/dev-log/DEV-016.md, docs/dev-log/AUDIT-016.md, and docs/loop/runtime-memory/runs/TASK-XTGZPT-DEV-016-TEST-REPAIR-CODEX-1.json first. Update DEV-016/AUDIT-016 and directly related runtime memory notes to replace outdated 'no node/npm' and 'browser not run' statements. The external verifier ran and passed: git diff --check; npm run lint; npm run typecheck; npm run test with 14 test files and 56 tests passed; npm run build; npm run smoke:api; npm audit --audit-level=low with 0 vulnerabilities. Browser DOM verification passed on http://127.0.0.1:3014 with 1440 viewport: admin/113113 login succeeded, System Settings displayed policy seed-dev-016 and AI Framework list, AI Frameworks stayed inside existing System Settings menu, and no new top-level AI menu appeared. Screenshot capture timed out in Browser CDP, so record DOM verification success and screenshot capture limitation. Do not edit source code unless markdown/docs consistency absolutely requires it."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      }
+    ],
+    "connector_timeout_seconds": 600
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
