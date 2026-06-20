@@ -441,15 +441,15 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.gate_status["preflight_gate"]["status"], "passed")
             self.assertEqual(runtime.context.task_record.gate_status["merge_gate"]["status"], "passed")
 
-    def test_runtime_executes_codex_before_git_in_the_same_repo_path(self) -> None:
+    def test_runtime_executes_codex_before_git_without_writing_source_path(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
             subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
             payload = BootPayload(
                 task_id="TASK-TEST-CODEX-GIT-ORDER",
-                goal="Execute implementation through Codex, then inspect git state in the same repository.",
+                goal="Execute implementation through Codex in an isolated worktree, then inspect git state.",
                 scope={"include": [str(git_repo_dir)]},
-                acceptance=["Codex writes before git inspection in the same working tree."],
+                acceptance=["Codex writes before git inspection without touching source path."],
                 environment={
                     "source_path": str(git_repo_dir),
                     "worktree_root": worktrees_dir,
@@ -493,9 +493,10 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertNotEqual(runtime.context.primary_worktree.path, str(git_repo_dir))
             self.assertEqual([name for name, _ in seen_calls], ["codex_executor", "git"])
             for _, connector_payload in seen_calls:
-                self.assertEqual(connector_payload["worktree_path"], str(git_repo_dir))
+                self.assertEqual(connector_payload["worktree_path"], runtime.context.primary_worktree.path)
                 self.assertEqual(connector_payload["git_path"], str(git_repo_dir))
-                self.assertEqual(connector_payload["codex_path"], str(git_repo_dir))
+                self.assertEqual(connector_payload["codex_path"], runtime.context.primary_worktree.path)
+                self.assertNotEqual(connector_payload["codex_path"], str(git_repo_dir))
 
     def test_runtime_can_resume_existing_durable_state(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

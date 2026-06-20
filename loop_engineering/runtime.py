@@ -389,7 +389,6 @@ class LoopRuntime:
         source_path = self.context.environment.get("source_path")
         connector_worktree_path = (
             self.context.environment.get("worktree_path")
-            or source_path
             or self.context.primary_worktree.path
         )
         connector_repo_path = self.context.environment.get("git_path") or source_path or connector_worktree_path
@@ -418,7 +417,7 @@ class LoopRuntime:
                 execute_connector(
                     connector,
                     {
-                        "path": source_path or connector_worktree_path,
+                        "path": connector_worktree_path,
                         "worktree_path": connector_worktree_path,
                         "git_path": connector_repo_path,
                         "target": self.context.environment.get("browser_target", "about:blank"),
