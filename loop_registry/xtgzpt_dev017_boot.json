@@ -1,0 +1,183 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-017-CODEX-1",
+  "goal": "Use Loop to execute DEV-017 for xtgzpt: full-flow responsive UI/UX and page-state acceptance. Bring all core existing pages to deliverable 1440/1280/960 desktop standards, with robust Russian-length text handling, visible normal/empty/loading/no-permission/error/AI-generating/AI-failed/archived states, and no new business scope.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance system behavior",
+      "procurement system",
+      "inventory system",
+      "ERP expansion",
+      "new backend business modules",
+      "external agent automation",
+      "external vector database",
+      "external notification services",
+      "mobile app",
+      "new top-level menu",
+      "AI automatic business execution",
+      "manual project edits outside Loop"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in an isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-016.md, docs/dev-log/AUDIT-016.md, and recent docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-017 and AUDIT-017 records are written to docs/dev-log.",
+    "Core existing pages are covered: Dashboard, Workbench, Projects, Tasks, Chat, Knowledge, Contracts, Approvals, System Settings, and Login.",
+    "The app remains a single desktop web product targeting 1440, 1280, and 960 widths; mobile app work is out of scope.",
+    "Russian-length text handling is strengthened: long labels, badges, table cells, cards, buttons, side navigation items, and evidence panels must wrap or truncate predictably without overlap.",
+    "No visible in-app explanatory marketing text is added; pages must feel like production management software, not a feature overview.",
+    "No new top-level menu is added. AI Frameworks and AI Runs remain under existing System Settings and existing source-object pages.",
+    "State coverage is explicit and visually consistent: normal, empty, loading, no-permission, error, AI-generating, AI-failed, expired/archived where applicable.",
+    "Frontend navigation and work surfaces remain role-aware and permission-aware; backend permission behavior is not weakened.",
+    "AI remains unable to approve, reject, return, transfer, add-sign, publish knowledge, create official tasks, sign, pay, or confirm execution without human confirmation.",
+    "Add or update focused tests where practical for UI state contracts, permission rendering contracts, or shared state labels without introducing brittle screenshot-only tests.",
+    "PostgreSQL migration assets are not required unless a directly necessary UI state persistence field is introduced; avoid schema changes unless unavoidable.",
+    "Loop runs xtgzpt gates: git diff --check, npm run lint, npm run typecheck, npm run test, npm run build, npm run smoke:api, npm audit --audit-level=low, and browser DOM verification at 1440/1280/960 where available.",
+    "Browser verification must at least confirm login, top-level navigation, System Settings, Chat AI state surface, Knowledge empty/normal surface, Contracts surface, Approvals surface, and no new top-level AI menu.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 14,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test",
+      "browser",
+      "product_design"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-017. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, docs/dev-log/DEV-016.md, docs/dev-log/AUDIT-016.md, and recent docs/loop/runtime-memory records before editing. Complete DEV-017 full-flow responsive UI/UX and page-state acceptance for the existing xtgzpt application. Required outcome: production-grade layout consistency across Dashboard, Workbench, Projects, Tasks, Chat, Knowledge, Contracts, Approvals, System Settings, and Login at 1440/1280/960 desktop widths; Russian-length text wrapping/truncation; visible and consistent normal/empty/loading/no-permission/error/AI-generating/AI-failed/expired/archived states where applicable; role/permission-aware surfaces; no new top-level menus; AI Frameworks and AI Runs remain inside existing System Settings and source-object surfaces. Add focused tests or smoke checks if useful. Write DEV-017/AUDIT-017 docs and runtime memory. Keep AI human-boundary rules: AI cannot approve, reject, return, transfer, add-sign, publish knowledge, create official tasks, sign, pay, or confirm execution without human confirmation. Do not implement finance, procurement, inventory, ERP, external agents, external vector DB, external notifications, mobile app, deployment, secrets, production writes, or new backend business modules."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 420
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 300
+      },
+      {
+        "name": "audit",
+        "command": [
+          "npm",
+          "audit",
+          "--audit-level=low"
+        ],
+        "timeout_seconds": 180
+      }
+    ],
+    "connector_timeout_seconds": 2400
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "autonomy": {
+      "continue_without_user_confirmation": true,
+      "stop_only_for": [
+        "missing_credentials",
+        "missing_secrets",
+        "production_write_risk",
+        "destructive_operation",
+        "contradictory_requirements"
+      ]
+    },
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
