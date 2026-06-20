@@ -1,0 +1,151 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-012-CODEX-1",
+  "goal": "Use Loop to execute DEV-012 for xtgzpt: production file storage, file metadata, object binding, permissions, versions, archive, audit, and AI file-reference permission checks. Loop must delegate implementation to the Codex writer executor in the isolated Loop worktree, then inspect, run gates, review, verify, and record project memory.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance-specific assumptions",
+      "manual project edits outside Loop",
+      "file center top-level menu",
+      "external cloud drive integration",
+      "full approval workflow",
+      "full contract workflow",
+      "external notifications",
+      "mobile app"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop loads the full xtgzpt project context from docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop reads docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records before implementation.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-012 and AUDIT-012 records are written to docs/dev-log.",
+    "File metadata is modeled independently from binary content and includes ownership, organization, source object binding, status, version, uploader, timestamps, and storage policy fields.",
+    "Database migration assets cover file metadata, file versions, object bindings, archive status, and audit-related fields in a PostgreSQL-compatible way.",
+    "File upload creates metadata and a new version record without leaking storage internals.",
+    "Files can be bound to existing business objects such as project, task, chat thread, knowledge item, memory item, contract placeholder, or approval placeholder where the current code supports the object boundary.",
+    "Preview and download APIs enforce backend file permissions and inherited source-object permissions.",
+    "Unauthorized users cannot preview or download files and error responses must not leak file names or sensitive object names.",
+    "Formal-process files cannot be physically deleted; archive/void behavior is used instead and is audited.",
+    "Upload, preview, download, archive, and permission denial actions write audit records.",
+    "AI file-reference permission checks prevent AI from using files the current user cannot access.",
+    "The frontend exposes file controls only within existing pages/components where relevant and must not add a new top-level file center menu in DEV-012.",
+    "Core file states cover normal, empty, loading, no-permission, error, archived, and version history behavior.",
+    "Computer desktop widths remain usable without text overlap or unusable controls; mobile app is not in scope.",
+    "DEV-012 must not implement full approval flow, full contract flow, external cloud drive integration, deployment, production writes, secrets, finance modules, external notifications, or unrelated features.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 8,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-012. Work only in the current working tree. Read the complete project context first: docs/loop/00_MEMORY_INDEX.md, PROJECT_INTAKE.md, README.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, docs/dev-readiness/03_OBJECTS_AND_STATE_MACHINES.md, docs/dev-readiness/04_API_DRAFT.md, docs/dev-readiness/06_AUDIT_LOG_MATRIX.md, docs/dev-readiness/08_TEST_CASES_AND_ACCEPTANCE.md, docs/dev-readiness/10_DEVELOPMENT_BACKLOG.md, and the latest docs/loop/runtime-memory records. Complete DEV-012 production file storage. Required outcome: independent file metadata and version contracts, PostgreSQL-compatible migration assets for file metadata/versions/object bindings/archive/audit fields, upload creates metadata and version records, files bind to existing business objects where supported, preview/download enforce backend file permissions and inherited source-object permissions, unauthorized users cannot preview/download and responses do not leak file names or sensitive object names, formal-process files are archived/voided rather than physically deleted, upload/preview/download/archive/permission-denial actions write audit logs, AI file-reference permission checks block AI from using inaccessible files, frontend file controls appear only inside existing relevant pages/components, no new top-level file center menu, file states include normal/empty/loading/no-permission/error/archived/version history, DEV-012 and AUDIT-012 logs are written, backlog/status docs are aligned, and all local gates pass. Keep AI human-confirmation boundaries. Do not implement full approval flow, full contract flow, external cloud drive integration, deployment, production writes, secrets, finance modules, external notifications, mobile app, or unrelated features."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}
