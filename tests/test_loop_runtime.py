@@ -4,13 +4,25 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from loop_engineering.boot import boot_runtime, validate_boot_payload
 from loop_engineering.models import BootPayload
+from loop_engineering.repository_memory import RepositoryMemory
+from loop_engineering.runtime import _trigger_summary_tokens
 from loop_engineering.watchdog import evaluate_heartbeat
 
 
 class LoopRuntimeTests(unittest.TestCase):
+    def test_trigger_summary_tokens_drop_boilerplate_words(self) -> None:
+        tokens = _trigger_summary_tokens(
+            "Use when creating or upgrading a reusable engineering governance system for a workspace."
+        )
+        self.assertNotIn("use", tokens)
+        self.assertNotIn("for", tokens)
+        self.assertIn("engineering", tokens)
+        self.assertIn("governance", tokens)
+
     def test_validate_boot_payload_requires_goal(self) -> None:
         with self.assertRaises(ValueError):
             validate_boot_payload(
@@ -72,8 +84,9 @@ class LoopRuntimeTests(unittest.TestCase):
             artifact_types = {artifact["type"] for artifact in task_record["artifacts"]}
             self.assertIn("issue_backlog", artifact_types)
             self.assertIn("tool_contracts", artifact_types)
-            self.assertIn("implementation_tracks", artifact_types)
-            self.assertIn("required_statuses", artifact_types)
+            self.assertIn("module_list", artifact_types)
+            self.assertIn("entities", artifact_types)
+            self.assertIn("page_map", artifact_types)
             self.assertIn("filesystem_listing", artifact_types)
             self.assertTrue(task_record["active_subagents"])
             memory_data = json.loads(memory_path.read_text(encoding="utf-8"))
@@ -83,6 +96,53 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertTrue(run_report_path.exists())
             run_report = json.loads(run_report_path.read_text(encoding="utf-8"))
             self.assertEqual(run_report["issue_count"], len(task_record["issue_backlog"]))
+            run_summary_path = Path(records_dir) / payload.task_id / "run_summary.json"
+            self.assertTrue(run_summary_path.exists())
+            run_summary = json.loads(run_summary_path.read_text(encoding="utf-8"))
+            self.assertEqual(run_summary["schema_version"], "loop.run_summary.v1")
+            self.assertEqual(run_summary["status"], "completed")
+            self.assertTrue(run_summary["stages"])
+
+    def test_generic_project_goal_does_not_fallback_to_finance_skills(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-GENERIC-SKILL-FALLBACK",
+                goal="启动 xtgzpt 协同工作平台项目完整循环。",
+                scope={"include": ["/tmp/xtgzpt-bootstrap/xtgzpt"], "exclude": ["finance"]},
+                acceptance=["读取项目记忆并形成项目执行计划。", "Do not use finance skills for this project."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 3,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={
+                    "record_path": records_dir,
+                    "memory_namespace": "generic-skill-fallback",
+                },
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            for _ in range(4):
+                runtime.step()
+                if runtime.context.task_record.current_stage == "preflight":
+                    break
+
+            selected = runtime.context.memory.task_memory["selected_skills"]
+            self.assertIn("prd.parse", selected)
+            self.assertIn("backend.schema-design", selected)
+            self.assertIn("frontend.page-build", selected)
+            self.assertFalse(any(name.startswith("finance.") for name in selected))
 
     def test_network_failure_retries_and_completes_when_cleared(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
@@ -158,10 +218,185 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertEqual(runtime.context.task_record.status, "blocked")
             self.assertIsNotNone(runtime.context.task_record.intent_debt)
 
+    def test_code_failure_enters_self_repair_cycle_then_completes(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-CODE-SELF-REPAIR",
+                goal="Self repair after code failure.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Reach completed state after repair."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "simulation": {"failure_type": "code_error"},
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "self_repair_limit": 2,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "code-self-repair-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            for _ in range(16):
+                runtime.step()
+                if runtime.context.task_record.repair_count >= 1 and runtime.context.task_record.current_stage == "planning":
+                    runtime.context.environment["simulation"] = {}
+                if runtime.context.task_record.status in {"completed", "blocked", "aborted"}:
+                    break
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            self.assertEqual(runtime.context.task_record.status, "completed")
+            self.assertEqual(runtime.context.task_record.repair_count, 1)
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+            self.assertIn("self_repair_plan", artifact_types)
+            run_summary = json.loads((Path(records_dir) / payload.task_id / "run_summary.json").read_text(encoding="utf-8"))
+            self.assertEqual(run_summary["repair_count"], 1)
+
+    def test_code_failure_blocks_after_self_repair_limit(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-CODE-SELF-REPAIR-LIMIT",
+                goal="Stop after self repair budget is exhausted.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Block after repair limit."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "simulation": {"failure_type": "code_error"},
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 1,
+                    "self_repair_limit": 1,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "code-self-repair-limit-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=16)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(runtime.context.task_record.repair_count, 1)
+            self.assertIsNotNone(runtime.context.task_record.intent_debt)
+            self.assertEqual(runtime.context.task_record.intent_debt["reason"], "self-repair limit exhausted")
+
+    def test_tool_policy_blocks_high_risk_connector_and_creates_approval_request(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as repo_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-TOOL-POLICY-APPROVAL",
+                goal="Use GitHub connector with approval policy.",
+                scope={"include": [str(repo_dir)]},
+                acceptance=["Block before high-risk connector executes."],
+                environment={
+                    "source_path": str(repo_dir),
+                    "repository_root": str(repo_dir),
+                    "repository_memory_path": "memory",
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["github"],
+                    "repo": "owner/repo",
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "enforce_tool_policy": True,
+                    "require_approval_for_high_risk_tools": True,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "tool-policy-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=8)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            approvals = RepositoryMemory(Path(repo_dir) / "memory").list_approval_requests(status="open")
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertEqual(runtime.context.task_record.intent_debt["failure_type"], "permission_error")
+            self.assertTrue(approvals)
+            self.assertEqual(approvals[-1]["subject"], "github")
+            self.assertIn("approval_request", artifact_types)
+
+    def test_eval_gate_failure_enters_repair_path(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir:
+            payload = BootPayload(
+                task_id="TASK-TEST-EVAL-GATE",
+                goal="Run eval gate.",
+                scope={"include": [str(repo_root)]},
+                acceptance=["Fail eval when artifact is missing."],
+                environment={
+                    "source_path": str(repo_root),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["filesystem"],
+                    "eval_cases": [
+                        {
+                            "name": "requires-nonexistent-artifact",
+                            "required_artifacts": ["nonexistent_artifact"],
+                        }
+                    ],
+                },
+                policy={
+                    "workflow": "durable_workflow",
+                    "retry_limit": 0,
+                    "self_repair_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "eval-gate-namespace"},
+            )
+            runtime, task_store, memory_store = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.run_until_terminal(max_steps=12)
+            task_store.save(runtime.context.task_record)
+            memory_store.save(runtime.context.memory)
+
+            artifact_types = {artifact["type"] for artifact in runtime.context.task_record.artifacts}
+            self.assertEqual(runtime.context.task_record.status, "blocked")
+            self.assertIn("eval_summary", artifact_types)
+            self.assertEqual(runtime.context.task_record.intent_debt["failure_type"], "code_error")
+
     def test_runtime_executes_git_cli_test_and_mcp_connectors(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
             subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.email", "loop-test@example.com"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.name", "Loop Test"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            Path(git_repo_dir, "README.md").write_text("# Test\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "commit", "-m", "Initial"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
             payload = BootPayload(
                 task_id="TASK-TEST-0004",
                 goal="Run git, cli, test, and mcp connectors for verification.",
@@ -210,6 +445,122 @@ class LoopRuntimeTests(unittest.TestCase):
             self.assertIn("tool_contracts", artifact_types)
             self.assertEqual(runtime.context.task_record.gate_status["preflight_gate"]["status"], "passed")
             self.assertEqual(runtime.context.task_record.gate_status["merge_gate"]["status"], "passed")
+
+    def test_runtime_executes_codex_before_git_without_writing_source_path(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
+            subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            payload = BootPayload(
+                task_id="TASK-TEST-CODEX-GIT-ORDER",
+                goal="Execute implementation through Codex in an isolated worktree, then inspect git state.",
+                scope={"include": [str(git_repo_dir)]},
+                acceptance=["Codex writes before git inspection without touching source path."],
+                environment={
+                    "source_path": str(git_repo_dir),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["codex_executor", "git"],
+                    "codex_command": [
+                        "python3",
+                        "-c",
+                        "from pathlib import Path; Path('codex-output.txt').write_text('generated', encoding='utf-8')",
+                    ],
+                    "git_base_ref": "HEAD",
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "codex-git-order"},
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.context.task_record.current_stage = "executing"
+            runtime.context.memory.task_memory["selected_connectors"] = ["git", "codex_executor"]
+
+            seen_calls: list[tuple[str, dict]] = []
+
+            def fake_execute(connector, connector_payload):
+                seen_calls.append((connector.name, dict(connector_payload)))
+                return {
+                    "connector": connector.name,
+                    "status": "completed",
+                    "summary": f"Executed {connector.name}.",
+                    "artifacts": [],
+                    "next_recommendation": "",
+                }
+
+            with patch("loop_engineering.runtime.execute_connector", side_effect=fake_execute):
+                result = runtime.step()
+
+            self.assertEqual(result.status, "done")
+            self.assertNotEqual(runtime.context.primary_worktree.path, str(git_repo_dir))
+            self.assertEqual([name for name, _ in seen_calls], ["codex_executor", "git"])
+            for _, connector_payload in seen_calls:
+                self.assertEqual(connector_payload["worktree_path"], runtime.context.primary_worktree.path)
+                self.assertEqual(connector_payload["git_path"], runtime.context.primary_worktree.path)
+                self.assertEqual(connector_payload["codex_path"], runtime.context.primary_worktree.path)
+                self.assertNotEqual(connector_payload["codex_path"], str(git_repo_dir))
+
+    def test_runtime_git_connector_inspects_codex_worktree_diff(self) -> None:
+        repo_root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as records_dir, tempfile.TemporaryDirectory() as worktrees_dir, tempfile.TemporaryDirectory() as git_repo_dir:
+            subprocess.run(["git", "init"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.email", "loop-test@example.com"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "config", "user.name", "Loop Test"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            Path(git_repo_dir, "README.md").write_text("# Test\n", encoding="utf-8")
+            subprocess.run(["git", "add", "README.md"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            subprocess.run(["git", "commit", "-m", "Initial"], cwd=git_repo_dir, check=True, capture_output=True, text=True)
+            payload = BootPayload(
+                task_id="TASK-TEST-CODEX-GIT-DIFF",
+                goal="Execute Codex and inspect generated diff in isolated worktree.",
+                scope={"include": [str(git_repo_dir)]},
+                acceptance=["Generated diff is visible to git connector."],
+                environment={
+                    "source_path": str(git_repo_dir),
+                    "worktree_root": worktrees_dir,
+                    "available_connectors": ["codex_executor", "git"],
+                    "codex_command": [
+                        "python3",
+                        "-c",
+                        "from pathlib import Path; Path('codex-output.txt').write_text('generated', encoding='utf-8')",
+                    ],
+                    "git_base_ref": "HEAD",
+                },
+                policy={
+                    "workflow": "fixed",
+                    "retry_limit": 0,
+                    "reviewer_required": True,
+                    "verifier_required": True,
+                    "allow_subagents": False,
+                },
+                memory={"record_path": records_dir, "memory_namespace": "codex-git-diff"},
+            )
+            runtime, _, _ = boot_runtime(
+                payload=payload,
+                skill_registry_path=str(repo_root / "loop_registry" / "skills.json"),
+                connector_registry_path=str(repo_root / "loop_registry" / "connectors.json"),
+            )
+            runtime.context.task_record.current_stage = "executing"
+            runtime.context.memory.task_memory["selected_connectors"] = ["git", "codex_executor"]
+
+            result = runtime.step()
+
+            self.assertEqual(result.status, "done")
+            self.assertFalse(Path(git_repo_dir, "codex-output.txt").exists())
+            self.assertTrue(Path(runtime.context.primary_worktree.path, "codex-output.txt").exists())
+            artifact_values = {
+                artifact["type"]: artifact["value"]
+                for artifact in runtime.context.task_record.artifacts
+                if artifact.get("type") in {"vcs_changed_files", "vcs_commit_plan"}
+            }
+            self.assertIn("codex-output.txt", artifact_values["vcs_changed_files"])
+            self.assertTrue(artifact_values["vcs_commit_plan"]["can_commit"])
 
     def test_runtime_can_resume_existing_durable_state(self) -> None:
         repo_root = Path(__file__).resolve().parents[1]

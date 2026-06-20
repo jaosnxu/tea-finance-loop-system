@@ -1,0 +1,120 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-010-CODEX-2",
+  "goal": "Use Loop to execute DEV-010 for xtgzpt: role and permission productionization. Loop must delegate implementation to the Codex writer executor in the isolated Loop worktree, then inspect, run gates, review, verify, and record project memory.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance-specific assumptions",
+      "manual project edits outside Loop",
+      "contract full workflow",
+      "approval full workflow",
+      "file binary storage"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop loads xtgzpt docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-010 and AUDIT-010 records are written to docs/dev-log.",
+    "The shared role model supports the 11 Phase 1 roles from docs/PROJECT_CONSTITUTION.md and docs/dev-readiness/02_PERMISSION_MATRIX.md.",
+    "The permission model exposes six independent dimensions: menu, data, operation, approval, file, and ai.",
+    "Approval permissions are no longer mixed only into operation permissions; permission summaries and policy APIs include approval permissions.",
+    "System administrators can configure settings without automatically receiving all business data.",
+    "Normal users cannot access system settings or permission policy APIs, and denials are audited without leaking sensitive object names.",
+    "Database migration assets cover approval permission policy storage.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 5,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-010. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, and docs/dev-readiness/02_PERMISSION_MATRIX.md first. Complete DEV-010 role and permission productionization without modifying the Loop platform repo. Required outcome: shared model supports 11 Phase 1 roles, permission summaries expose menu/data/operation/approval/file/ai as six separate dimensions, approval permission helpers and policy API output exist, system admin remains configuration-scoped and does not get all business data by default, normal users are blocked from settings and permission APIs with audited denials, database migration assets cover approval permission policy storage, DEV-010 and AUDIT-010 logs are written, backlog/status docs are aligned, and all local gates pass. Keep AI human-confirmation boundaries. Do not implement the full contract workflow, full approval workflow, file binary storage, deployment, production writes, secrets, finance modules, or unrelated features."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": ["npm", "run", "lint"],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": ["npm", "run", "typecheck"],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": ["npm", "run", "test"],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": ["npm", "run", "build"],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": ["npm", "run", "smoke:api"],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}

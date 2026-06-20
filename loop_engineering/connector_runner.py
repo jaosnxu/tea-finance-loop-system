@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from .command_resolution import environment_for_command, resolve_command_executable
 from .ci_runner import run_ci_suite
 from .git_workflow import inspect_git_workflow
 from .github_workflow import inspect_github_workflow
@@ -68,11 +69,14 @@ def _execute_shell_connector(connector: ConnectorMeta, spec: dict[str, Any], pay
 
     if not command:
         raise ConnectorExecutionError(f"No command resolved for connector {connector.name}")
+    command = resolve_command_executable(command)
 
     try:
         completed = subprocess.run(
             command,
             cwd=str(cwd) if cwd else None,
+            env=environment_for_command(command),
+            stdin=subprocess.DEVNULL,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
@@ -153,6 +157,8 @@ def _execute_ci_suite_connector(connector: ConnectorMeta, spec: dict[str, Any], 
         default_command=_resolve_payload_command(executor.get("command_from_payload_key"), payload),
         cwd=str(cwd),
         timeout_seconds=timeout_seconds,
+        setup_command=_resolve_payload_command(executor.get("setup_command_from_payload_key"), payload)
+        or _resolve_payload_command("test_setup_command", payload),
     )
     return {
         "connector": connector.name,
@@ -247,9 +253,14 @@ def _execute_mcp_stdio_connector(connector: ConnectorMeta, spec: dict[str, Any],
     tool_arguments_key = executor.get("tool_arguments_from_payload_key", "mcp_tool_arguments")
     tool_name = payload.get(tool_name_key)
     tool_arguments = payload.get(tool_arguments_key) or {}
+    server_command = resolve_command_executable(server_command)
     client = None
     try:
-        client = MCPStdioClient(server_command, timeout_seconds=timeout_seconds)
+        client = MCPStdioClient(
+            server_command,
+            timeout_seconds=timeout_seconds,
+            env=environment_for_command(server_command),
+        )
         initialize_result = client.initialize()
         tools_result = client.list_tools()
         artifacts = [
@@ -300,14 +311,25 @@ def _resolve_payload_command(command_from_payload_key: str | None, payload: dict
     if command_from_payload_key:
         value = payload.get(command_from_payload_key)
         if isinstance(value, list) and value:
-            return [str(item) for item in value]
+            return [_format_command_item(str(item), payload) for item in value]
     return []
+
+
+def _format_command_item(value: str, payload: dict[str, Any]) -> str:
+    replacements = {
+        "worktree_path": str(payload.get("worktree_path") or ""),
+        "path": str(payload.get("path") or ""),
+        "git_path": str(payload.get("git_path") or ""),
+    }
+    for key, replacement in replacements.items():
+        value = value.replace(f"{{{key}}}", replacement)
+    return value
 
 
 def _resolve_cwd(executor: dict[str, Any], payload: dict[str, Any]) -> Path | None:
     cwd_from_payload_key = executor.get("cwd_from_payload_key")
     if cwd_from_payload_key and payload.get(cwd_from_payload_key):
-        return Path(str(payload[cwd_from_payload_key]))
+        return Path(_format_command_item(str(payload[cwd_from_payload_key]), payload))
     if payload.get("worktree_path"):
         return Path(str(payload["worktree_path"]))
     if payload.get("path"):

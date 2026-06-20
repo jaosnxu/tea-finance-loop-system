@@ -2,8 +2,11 @@
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "Loop runtime tests",
-      "Tea finance build and tests"
+      "lint",
+      "typecheck",
+      "test",
+      "build-smoke",
+      "audit"
     ]
   },
   "enforce_admins": true,

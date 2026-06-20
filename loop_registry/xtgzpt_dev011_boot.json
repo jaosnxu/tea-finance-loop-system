@@ -1,0 +1,143 @@
+{
+  "task_id": "TASK-XTGZPT-DEV-011-CODEX-1",
+  "goal": "Use Loop to execute DEV-011 for xtgzpt: my workbench, in-app notifications, page states, and responsive acceptance. Loop must delegate implementation to the Codex writer executor in the isolated Loop worktree, then inspect, run gates, review, verify, and record project memory.",
+  "scope": {
+    "include": [
+      "/tmp/xtgzpt-bootstrap/xtgzpt"
+    ],
+    "exclude": [
+      "Loop platform source changes",
+      "production writes",
+      "deployment",
+      "secrets",
+      "finance-specific assumptions",
+      "manual project edits outside Loop",
+      "file production storage",
+      "full approval workflow",
+      "full contract workflow",
+      "external notifications",
+      "mobile app"
+    ]
+  },
+  "acceptance": [
+    "Implementation is executed through the codex_executor connector in the isolated Loop worktree, not by manual chat edits.",
+    "Loop loads xtgzpt docs/loop/00_MEMORY_INDEX.md and records loaded project memory files.",
+    "Loop writes project-level action history to xtgzpt docs/loop/runtime-memory.",
+    "DEV-011 and AUDIT-011 records are written to docs/dev-log.",
+    "The home page and my workbench become real role-aware work entry points, not technical placeholder pages.",
+    "Normal users can immediately see their own pending work, responsible tasks, participating projects, approval items, contract confirmations, AI-result confirmations, and in-app notifications where applicable.",
+    "Administrators and normal users see different workbench content according to role, organization scope, menu permissions, data permissions, operation permissions, approval permissions, file permissions, and AI permissions.",
+    "In-app notifications exist for pending work, approval work, contract confirmation, AI result confirmation, no-permission events, and important system status.",
+    "Core pages expose consistent states: normal, empty, loading, no-permission, error, AI_Generating, AI_Failed, expired, and archived.",
+    "Core task flows remain usable at 1440, 1280, and 960 widths without text overlap or unusable controls.",
+    "DEV-011 must not implement full file storage, full approval flow, full contract flow, deployment, production writes, secrets, finance modules, or unrelated features.",
+    "Loop runs xtgzpt npm gates: lint, typecheck, test, build, smoke:api.",
+    "Any failure is classified, retried or repaired according to Loop policy, and written to intent debt or repair queue if not resolved."
+  ],
+  "environment": {
+    "source_path": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "project_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "require_project_memory_index": true,
+    "project_memory_index_path": "docs/loop/00_MEMORY_INDEX.md",
+    "project_memory_recent_limit": 5,
+    "repository_root": "/tmp/xtgzpt-bootstrap/xtgzpt",
+    "repository_memory_path": "docs/loop/runtime-memory",
+    "worktree_root": "/private/tmp/loop-worktrees",
+    "available_connectors": [
+      "codex_executor",
+      "git",
+      "test"
+    ],
+    "repo": "jaosnxu/xtgzpt",
+    "codex_command": [
+      "/Applications/Codex.app/Contents/Resources/codex",
+      "exec",
+      "--cd",
+      "{worktree_path}",
+      "--skip-git-repo-check",
+      "--sandbox",
+      "workspace-write",
+      "You are the Loop writer executor for xtgzpt DEV-011. Work only in the current working tree. Read docs/loop/00_MEMORY_INDEX.md, docs/PROJECT_CONSTITUTION.md, docs/TECHNICAL_STANDARD.md, docs/BUSINESS_IMPLEMENTATION_PLAN.md, docs/TEST_ACCEPTANCE_STANDARD.md, docs/dev-readiness/02_PERMISSION_MATRIX.md, and the latest docs/loop/runtime-memory records first. Complete DEV-011: my workbench, in-app notifications, page states, and responsive acceptance. Required outcome: home page and my workbench are role-aware work entry points, normal users see their own pending work/responsible tasks/participating projects/pending approvals/contract confirmations/AI-result confirmations/notifications where applicable, administrators and normal users see different content according to menu/data/operation/approval/file/ai permissions, in-app notifications cover pending work/approval/contract confirmation/AI result/no-permission/system status, core pages expose normal/empty/loading/no-permission/error/AI_Generating/AI_Failed/expired/archived states, 1440/1280/960 widths remain usable without text overlap, DEV-011 and AUDIT-011 logs are written, backlog/status docs are aligned, and all local gates pass. Keep AI human-confirmation boundaries. Do not implement full file storage, full approval flow, full contract flow, deployment, production writes, secrets, finance modules, external notifications, mobile app, or unrelated features."
+    ],
+    "git_base_ref": "origin/main",
+    "test_setup_command": [
+      "npm",
+      "ci"
+    ],
+    "test_suites": [
+      {
+        "name": "lint",
+        "command": [
+          "npm",
+          "run",
+          "lint"
+        ],
+        "timeout_seconds": 180
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "test",
+        "command": [
+          "npm",
+          "run",
+          "test"
+        ],
+        "timeout_seconds": 240
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "timeout_seconds": 360
+      },
+      {
+        "name": "smoke-api",
+        "command": [
+          "npm",
+          "run",
+          "smoke:api"
+        ],
+        "timeout_seconds": 240
+      }
+    ],
+    "connector_timeout_seconds": 1800
+  },
+  "policy": {
+    "workflow": "durable_workflow",
+    "runtime": "graph_runtime",
+    "retry_limit": 3,
+    "self_repair_limit": 3,
+    "reviewer_required": true,
+    "verifier_required": true,
+    "merge_gate_required": false,
+    "require_test_artifact": true,
+    "independent_review_required": true,
+    "independent_verification_required": true,
+    "allow_subagents": false,
+    "allow_production_writes": false,
+    "require_approval_for_high_risk_tools": true,
+    "approved_tools": [
+      "codex_executor"
+    ],
+    "agent_roles": {
+      "writer": "codex_executor",
+      "reviewer": "reviewer",
+      "verifier": "verifier"
+    }
+  },
+  "memory": {
+    "record_path": "/private/tmp/loop-task-records",
+    "memory_namespace": "xtgzpt"
+  }
+}

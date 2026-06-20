@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 RETRYABLE_FAILURES = {"network_error", "timeout"}
+SELF_REPAIRABLE_FAILURES = {"code_error"}
 BLOCKING_FAILURES = {"permission_error", "auth_error", "configuration_error", "requirement_ambiguity"}
 STOP_FAILURES = {"production_risk"}
 
@@ -30,3 +31,11 @@ def should_retry(error_type: str | None, retry_count: int, retry_limit: int) -> 
     if retry_count >= retry_limit:
         return False
     return error_type in RETRYABLE_FAILURES
+
+
+def should_self_repair(error_type: str | None, repair_count: int, repair_limit: int) -> bool:
+    if not error_type:
+        return False
+    if repair_count >= repair_limit:
+        return False
+    return error_type in SELF_REPAIRABLE_FAILURES

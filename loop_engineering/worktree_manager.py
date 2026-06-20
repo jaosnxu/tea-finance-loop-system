@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 import uuid
@@ -33,7 +34,8 @@ class WorktreeManager:
         if source_path:
             src = Path(source_path)
             if src.exists():
-                shutil.copytree(src, worktree_dir, ignore=IGNORE_NAMES)
+                if not self._create_git_worktree(src, worktree_dir):
+                    shutil.copytree(src, worktree_dir, ignore=IGNORE_NAMES)
             else:
                 worktree_dir.mkdir(parents=True, exist_ok=True)
         else:
@@ -61,3 +63,30 @@ class WorktreeManager:
         path = self.records_dir / f"{worktree_id}.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
         return WorktreeRecord(**payload)
+
+    def _create_git_worktree(self, source_path: Path, worktree_dir: Path) -> bool:
+        if not (source_path / ".git").exists():
+            return False
+        inside = subprocess.run(
+            ["git", "-C", str(source_path), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if inside.returncode != 0:
+            return False
+        head = subprocess.run(
+            ["git", "-C", str(source_path), "rev-parse", "--verify", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if head.returncode != 0:
+            return False
+        created = subprocess.run(
+            ["git", "-C", str(source_path), "worktree", "add", "--detach", str(worktree_dir), "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return created.returncode == 0

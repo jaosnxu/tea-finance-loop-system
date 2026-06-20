@@ -9,9 +9,12 @@ Protected branch target:
 - Status: enabled.
 
 Required checks:
-- `Loop runtime tests`
-- `Tea finance build and tests`
-- Status: enforced by GitHub branch protection.
+- `lint`
+- `typecheck`
+- `test`
+- `build-smoke`
+- `audit`
+- Status: enforced by GitHub branch protection, committed in `.github/branch-protection-main.json`, and aligned with `.github/workflows/ci.yml`.
 
 Production environment:
 - `production`

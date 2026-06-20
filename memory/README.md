@@ -8,6 +8,8 @@ Rules:
 - Keep the latest task status in `current_status.json`.
 - Persist blocked intent debt in `intent_debt.jsonl`.
 - Persist Loop-system defects and blockers in `issues/loop-system-issues.jsonl`.
+- Persist repair queue state in `repair_queue.jsonl` with `open`, `claimed`, `resolved`, and `failed` rows.
+- Persist human approval requests in `approval_requests.jsonl`.
 - Persist regression candidates in `regression_candidates.jsonl`.
 - Store per-task run snapshots in `runs/`.
 - Keep project backlog in `backlog/`.
