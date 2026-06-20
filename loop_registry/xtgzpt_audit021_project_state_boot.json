@@ -80,6 +80,35 @@
         "timeout_seconds": 60
       },
       {
+        "name": "current-status-json-parse",
+        "command": [
+          "python3",
+          "-m",
+          "json.tool",
+          "docs/loop/runtime-memory/current_status.json"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "run-summary-json-parse",
+        "command": [
+          "python3",
+          "-m",
+          "json.tool",
+          "docs/loop/runtime-memory/runs/TASK-XTGZPT-AUDIT-021-CODEX-1.json"
+        ],
+        "timeout_seconds": 60
+      },
+      {
+        "name": "runtime-memory-jsonl-parse",
+        "command": [
+          "python3",
+          "-c",
+          "import json, pathlib\nfor p in [pathlib.Path('docs/loop/runtime-memory/action_log.jsonl'), pathlib.Path('docs/loop/runtime-memory/run_history.jsonl')]:\n    for i, line in enumerate(p.read_text().splitlines(), 1):\n        if line.strip():\n            json.loads(line)\nprint('jsonl ok')"
+        ],
+        "timeout_seconds": 60
+      },
+      {
         "name": "lint",
         "command": [
           "npm",
