@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CHUCHUTEA | Система управления</title>
+  <style>
+    :root {
+      --bg: #f8f8f8;
+      --ink: #1a1a1a;
+      --muted: #6c6c6c;
+      --quiet: #999999;
+      --line: #d0d0d0;
+      --accent: #666666;
+    }
+
+    * { box-sizing: border-box; letter-spacing: 0; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter",
+        "Noto Sans", "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+      overflow: hidden;
+    }
+
+    button {
+      border: 0; background: none; color: inherit; font: inherit;
+      padding: 0; cursor: pointer; text-align: left;
+    }
+
+    .stage {
+      min-height: 100%;
+      padding: 44px 54px 34px;
+      display: grid;
+      grid-template-rows: 38px minmax(0, 1fr) auto;
+      gap: 30px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 170px 1fr 70px;
+      align-items: start;
+      font-size: 13px;
+      line-height: 1;
+      color: #1c1c1c;
+    }
+    .brand { font-weight: 600; }
+    .system-name { color: #343434; }
+    .count { justify-self: end; }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 34px;
+      align-items: end;
+    }
+
+    .content {
+      align-self: center;
+      max-width: 1080px;
+    }
+
+    .eyebrow {
+      margin: 0 0 70px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--quiet);
+    }
+
+    .ru-title {
+      margin: 0;
+      max-width: 1050px;
+      font-size: 92px;
+      line-height: 1.08;
+      font-weight: 400;
+      text-wrap: balance;
+    }
+
+    .zh-note {
+      margin: 24px 0 0;
+      max-width: 720px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4c4c4c;
+    }
+
+    .rule {
+      margin-top: 122px;
+      max-width: 680px;
+    }
+
+    .rule-mark {
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      margin-bottom: 28px;
+    }
+
+    .ru-rule {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.3;
+      font-weight: 400;
+      color: #111;
+    }
+
+    .zh-rule {
+      margin: 12px 0 0;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #9a9a9a;
+    }
+
+    .side {
+      align-self: end;
+      padding-bottom: 18px;
+      color: var(--muted);
+    }
+
+    .side-label {
+      margin: 0 0 22px;
+      font-size: 12px;
+      color: var(--quiet);
+    }
+
+    .metrics {
+      display: grid;
+      gap: 18px;
+    }
+
+    .metric {
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric-value {
+      font-size: 29px;
+      line-height: 1;
+      font-weight: 400;
+      color: var(--ink);
+    }
+
+    .metric-label {
+      margin-top: 9px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .metric-label span {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--quiet);
+    }
+
+    .bottom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: end;
+    }
+
+    .chapter-strip {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(74px, 1fr));
+      gap: 0;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .chapter {
+      min-height: 74px;
+      padding: 0 16px 0 0;
+      border-right: 1px solid var(--line);
+      opacity: 0.48;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .chapter:last-child { border-right: 0; }
+    .chapter:hover,
+    .chapter:focus-visible { opacity: 0.85; outline: none; }
+    .chapter.is-active { opacity: 1; }
+
+    .chapter-num {
+      display: block;
+      font-size: 12px;
+      line-height: 1;
+      color: #111;
+    }
+
+    .chapter-name {
+      display: block;
+      margin-top: 18px;
+      font-size: 12px;
+      color: #333;
+      white-space: nowrap;
+    }
+
+    .chapter-zh {
+      display: block;
+      margin-top: 5px;
+      font-size: 10px;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    .active-line {
+      width: 40px;
+      height: 2px;
+      margin-top: 10px;
+      background: transparent;
+      transition: background 180ms ease;
+    }
+
+    .chapter.is-active .active-line { background: var(--accent); }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-button {
+      min-width: 82px;
+      height: 40px;
+      padding: 0 18px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #222;
+      background: rgba(255,255,255,0.52);
+      backdrop-filter: blur(12px);
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .nav-button:hover,
+    .nav-button:focus-visible {
+      border-color: #bcbcb6;
+      background: rgba(255,255,255,0.82);
+      outline: none;
+    }
+
+    .transitioning .ru-title,
+    .transitioning .zh-note,
+    .transitioning .rule,
+    .transitioning .side {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .ru-title, .zh-note, .rule, .side {
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    @media (max-width: 1100px) {
+      body { overflow: auto; }
+      .stage { min-height: 100%; padding: 30px 26px; grid-template-rows: 38px auto auto; }
+      .topbar { grid-template-columns: 120px 1fr 42px; font-size: 12px; }
+      .main { grid-template-columns: 1fr; align-items: start; }
+      .content { padding-top: 60px; }
+      .eyebrow { margin-bottom: 44px; }
+      .ru-title { font-size: 54px; }
+      .rule { margin-top: 78px; }
+      .side { max-width: 640px; padding-bottom: 0; }
+      .bottom { grid-template-columns: 1fr; }
+      .chapter-strip { overflow-x: auto; grid-template-columns: repeat(12, 118px); padding-bottom: 10px; }
+      .controls { justify-content: flex-end; }
+    }
+
+    @media (max-width: 640px) {
+      .stage { padding: 24px 18px; }
+      .system-name { display: none; }
+      .topbar { grid-template-columns: 1fr 42px; }
+      .ru-title { font-size: 38px; line-height: 1.12; }
+      .zh-note { font-size: 13px; }
+      .ru-rule { font-size: 23px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="app">
+    <header class="topbar" aria-label="Presentation header">
+      <div class="brand">CHUCHUTEA</div>
+      <div class="system-name">Система управления</div>
+      <div class="count" id="count">01</div>
+    </header>
+
+    <section class="main" aria-live="polite">
+      <div class="content">
+        <p class="eyebrow" id="eyebrow">01 / Принцип</p>
+        <h1 class="ru-title" id="title">Вознаграждение начинается с прибыли.</h1>
+        <p class="zh-note" id="note">奖励只来自门店利润。门店不盈利，任何角色都没有奖励。能力来自等级认定，等级决定是否参与分配。</p>
+
+        <div class="rule">
+          <div class="rule-mark" aria-hidden="true"></div>
+          <p class="ru-rule" id="rule">Прибыль = Выручка − Все расходы</p>
+          <p class="zh-rule" id="ruleZh">门店利润 = 营业额 − 全部经营成本（含原材料、人工、房租、水电、平台费、税费、折旧、总部费用、市场费用、报废损耗）</p>
+        </div>
+      </div>
+
+      <aside class="side" aria-label="Key values">
+        <p class="side-label" id="sideLabel">Ключевые числа</p>
+        <div class="metrics" id="metrics"></div>
+      </aside>
+    </section>
+
+    <footer class="bottom">
+      <nav class="chapter-strip" aria-label="Chapters" id="chapters"></nav>
+      <div class="controls">
+        <button class="nav-button" type="button" id="prev">← Назад</button>
+        <button class="nav-button" type="button" id="next">Далее →</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const slides = [
+      {
+        ru: "Вознаграждение начинается с прибыли.",
+        zh: "奖励只来自门店利润。门店不盈利，任何角色都没有奖励。能力来自等级认定，等级决定是否参与分配。",
+        eyebrow: "Принцип",
+        rule: "Прибыль = Выручка − Все расходы",
+        ruleZh: "门店利润 = 营业额 − 全部经营成本（含原材料、人工、房租、水电、平台费、税费、折旧、总部费用、市场费用、报废损耗）",
+        label: "Порог",
+        metrics: [
+          ["≤ 0", "Бонусов нет", "净利润≤0 不分红"],
+          ["> 0", "Начинается расчёт", "净利润>0 进入分红计算"],
+          ["L2+", "Уровень подтверждён", "完成等级认定后参与"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Сначала прибыль. Затем расчёт.",
+        zh: "先确认门店盈利，再进入奖励计算。所有成本必须完整扣除，不分红的店不进入任何分配流程。",
+        eyebrow: "Порог прибыли",
+        rule: "Чистая прибыль ≤ 0: нет бонусов",
+        ruleZh: "净利润 ≤ 0：不分红",
+        label: "Расходы",
+        metrics: [
+          ["Сырьё", "10 позиций в базе", "原材料、报废损耗"],
+          ["Люди", "Зарплата и смены", "人工与工时"],
+          ["Площадка", "Аренда, налоги, платформы", "房租、税费、平台费"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Прибыль делится по роли.",
+        zh: "门店产生可分配利润后，分红池按角色进入固定结构。店长、区域经理、员工池各司其职。",
+        eyebrow: "Распределение",
+        rule: "45 / 15 / 40",
+        ruleZh: "分红结构：店长45% / 区域经理15% / 员工池40%",
+        label: "Формула",
+        metrics: [
+          ["45%", "Управляющий", "店长"],
+          ["15%", "Регион. менеджер", "区域经理"],
+          ["40%", "Пул сотрудников", "员工池"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Уровень подтверждает способность.",
+        zh: "L1 不参与分红。L2 起按权重进入员工池分配。越高等级 = 越大权重 = 越多分红。",
+        eyebrow: "Уровни L1–L5",
+        rule: "L2 вес 1.0 · L3 вес 1.5 · L4 вес 2.5 · L5 вес 4.0",
+        ruleZh: "L2权重1.0 → L5权重4.0封顶",
+        label: "Вес участия",
+        metrics: [
+          ["L2 1.0", "Зарплата 105%", "入门分红级"],
+          ["L4 2.5", "Зарплата 117%", "高级员工"],
+          ["L5 4.0", "Зарплата 125%", "最高等级封顶"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Зарплата и вознаграждение разделены.",
+        zh: "工资系数与分红规则各自独立运行。工时是分红资格的硬门槛：有效工时低于标准50%则不参与该月分红。",
+        eyebrow: "Зарплата и время",
+        rule: "Минимум 50% эффективных часов. Выше нормы не увеличивает долю.",
+        ruleZh: "有效工时≥标准50%才参与分红；超出不增加分红；跨店按实际工时拆分",
+        label: "Условия",
+        metrics: [
+          ["50%", "Минимум для участия", "低于50%不参与"],
+          ["Факт", "Дни в расчёте", "离职/休假按实际在岗"],
+          ["Раздел", "Часы между точками", "跨店按实际拆分"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Наставничество оплачивает компания.",
+        zh: "带教奖金由公司支付，不计入门店成本。必须提前登记唯一主导师，升级时导师获得奖励。",
+        eyebrow: "Наставничество",
+        rule: "L1 → L2: 3 000 ₽ · L2 → L3: 5 000 ₽",
+        ruleZh: "L1升L2奖金3000卢布 / L2升L3奖金5000卢布，公司支付",
+        label: "Условия",
+        metrics: [
+          ["3 000 ₽", "L1 → L2", "初级升级奖励"],
+          ["5 000 ₽", "L2 → L3", "高级升级奖励"],
+          ["1", "Один наставник", "唯一主导师 · 提前登记"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Рост не создаёт двойную выплату.",
+        zh: "M1 管一家店拿 45%。M2 开新店拿 45%，原店最高拿 10%（5%交付+5%稳定），最多 5 家店，期限 12 个月。",
+        eyebrow: "M1 / M2",
+        rule: "M2: новый магазин 45% · старый до 10% · лимит 5 точек · 12 мес.",
+        ruleZh: "新店45%；原店5%交付+5%稳定；最多5家门店；12个月期限",
+        label: "Ограничения",
+        metrics: [
+          ["M1", "140% зарплата", "管1家店 · 45%分红"],
+          ["M2", "150% зарплата", "固定工资150%"],
+          ["5", "Максимум точек", "最多管理5家门店"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Каждый рубль знает свой источник.",
+        zh: "四大资金池各走各的账：门店分红池走利润、带教奖金走公司、M2复制奖金走公司、红线罚没进全员奖励池。",
+        eyebrow: "Финансовые пулы",
+        rule: "45/15/40 — магазин. Наставничество и M2 — компания. Красная линия — общий пул.",
+        ruleZh: "分红池走门店利润；带教与M2复制走公司预算；红线罚没入公司全员奖励池",
+        label: "Источники",
+        metrics: [
+          ["Магазин", "45/15/40", "门店分红池"],
+          ["Компания", "Наставничество", "带教奖金池"],
+          ["Компания", "Тиражирование M2", "M2复制奖金池"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Стабильность подтверждается цифрами.",
+        zh: "M2 复制奖金按月计算：满 85% 营业额 + 无红线 + 盈利 = 拿满 10%。否则降档至 5% 或取消。12 个月后自动结束。",
+        eyebrow: "Бонус тиражирования",
+        rule: "5% передачи + 5% стабильности. Полные 10% при ≥85% выручки.",
+        ruleZh: "5%交付奖 + 5%稳定奖；满85%营业额+无红线+盈利 → 10%；否则5%或0",
+        label: "Критерии",
+        metrics: [
+          ["85%", "Порог выручки", "营业额达标线"],
+          ["0", "Нарушений", "零红线记录"],
+          ["12 мес.", "Период действия", "期满自动结束"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Красная линия останавливает выплату.",
+        zh: "食品安全、现金异常、数据造假、严重客诉 — 四条红线触碰即冻结当月分红，调查后判定取消或恢复。",
+        eyebrow: "Красные линии",
+        rule: "Заморозка → Проверка → Отмена или восстановление",
+        ruleZh: "冻结当月分红 → 调查 → 取消（入全员奖励池）或恢复",
+        label: "4 линии",
+        metrics: [
+          ["Еда", "Безопасность", "食品安全"],
+          ["Касса", "Нарушения", "现金异常"],
+          ["Данные", "Фальсификация", "数据造假"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Правила работают, когда они просты.",
+        zh: "五条铁律：不重复分红、不跨角色领取、M1/M2不同店重叠、工资分红分离、所有规则按月生效。",
+        eyebrow: "Принципы системы",
+        rule: "Без двойных выплат. Без пересечения ролей. Всё с 1-го числа.",
+        ruleZh: "不重复分红 · 不跨角色 · M1/M2不重叠 · 工资分红分离 · 按月生效",
+        label: "5 правил",
+        metrics: [
+          ["①", "Без дублей", "不重复分红"],
+          ["②", "Одна роль", "不跨角色"],
+          ["⑤", "С 1-го числа", "按月生效"]
+        ],
+        sideShow: true
+      },
+      {
+        ru: "Система готова к работе.",
+        zh: "CHUCHUTEA 门店运营闭环制度 V1.0。每一行规则都对应一个真实场景，每一个数字都指向可执行的决策。",
+        eyebrow: "Финал",
+        rule: "CHUCHUTEA · Система управления · Версия 1.0",
+        ruleZh: "门店运营闭环制度 · 最终版 · 2026",
+        label: "",
+        metrics: [],
+        sideShow: false
+      }
+    ];
+
+    const app = document.querySelector("#app");
+    const count = document.querySelector("#count");
+    const eyebrow = document.querySelector("#eyebrow");
+    const title = document.querySelector("#title");
+    const note = document.querySelector("#note");
+    const rule = document.querySelector("#rule");
+    const ruleZh = document.querySelector("#ruleZh");
+    const sideLabel = document.querySelector("#sideLabel");
+    const side = document.querySelector(".side");
+    const metrics = document.querySelector("#metrics");
+    const chapters = document.querySelector("#chapters");
+    const prev = document.querySelector("#prev");
+    const next = document.querySelector("#next");
+    let active = 0;
+
+    const pad = (i) => String(i + 1).padStart(2, "0");
+
+    function renderChapters() {
+      chapters.innerHTML = "";
+      slides.forEach((s, i) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `chapter${i === active ? " is-active" : ""}`;
+        btn.setAttribute("aria-current", i === active ? "page" : "false");
+        btn.innerHTML = `
+          <span class="chapter-num">${pad(i)}</span>
+          <span class="chapter-name">${s.eyebrow}</span>
+          <span class="chapter-zh">${chapterZh(i)}</span>
+          <span class="active-line" aria-hidden="true"></span>
+        `;
+        btn.addEventListener("click", () => setSlide(i));
+        chapters.appendChild(btn);
+      });
+    }
+
+    function chapterZh(i) {
+      return ["原则","利润","分配","等级","工时","带教","复制","资金池","M2奖金","红线","铁律","终章"][i];
+    }
+
+    function setSlide(index) {
+      active = (index + slides.length) % slides.length;
+      app.classList.add("transitioning");
+      setTimeout(() => {
+        const s = slides[active];
+        count.textContent = pad(active);
+        eyebrow.textContent = `${pad(active)} / ${s.eyebrow}`;
+        title.textContent = s.ru;
+        note.textContent = s.zh;
+        rule.textContent = s.rule;
+        ruleZh.textContent = s.ruleZh;
+        sideLabel.textContent = s.label;
+
+        if (s.sideShow && s.metrics.length) {
+          side.style.display = "block";
+          metrics.innerHTML = s.metrics.map(m => `
+            <div class="metric">
+              <div class="metric-value">${m[0]}</div>
+              <div class="metric-label">${m[1]}<span>${m[2]}</span></div>
+            </div>
+          `).join("");
+        } else {
+          side.style.display = "none";
+        }
+
+        renderChapters();
+        app.classList.remove("transitioning");
+      }, 130);
+    }
+
+    prev.addEventListener("click", () => setSlide(active - 1));
+    next.addEventListener("click", () => setSlide(active + 1));
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") setSlide(active - 1);
+      if (e.key === "ArrowRight") setSlide(active + 1);
+      if (/^[1-9]$/.test(e.key)) setSlide(Number(e.key) - 1);
+      if (e.key === "0") setSlide(9);
+      if (e.key === "-") setSlide(10);
+      if (e.key === "=") setSlide(11);
+    });
+
+    renderChapters();
+    setSlide(0);
+  </script>
+</body>
+</html>
